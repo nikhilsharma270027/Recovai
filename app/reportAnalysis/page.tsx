@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Upload,
   X,
@@ -49,6 +49,8 @@ type UploadedFile = {
 
 export default function ReportAnalysis() {
   const [extractedText, setExtractedText] = useState("");
+
+
 
   function extractReport() {
     // Simulating an AI extraction process
@@ -271,10 +273,14 @@ export default function ReportAnalysis() {
               </TabsTrigger>
             </TabsList>
 
-            <div className="space-y-6">
-              <UploadFiles onFileSelect={setSelectedFile} />
-              {selectedFile && <ReportExtract file={selectedFile} />}
-            </div>
+            <TabsContent value="upload" >
+              <div className="space-y-6 ">
+                <UploadFiles onFileSelect={setSelectedFile} />
+                {/* {selectedFile && <ReportExtract file={selectedFile} />} */}
+              </div>
+            </TabsContent>
+
+            
 
             <TabsContent value="insights" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -70,11 +70,7 @@ export default function MedicineReminders() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  const markAsTaken = (id: string) => {
-    setMedications(
-      medications.map((med) => (med.id === id ? { ...med, taken: true } : med))
-    );
-  };
+
 
   useEffect(() => {
     const fetchMedications = async () => {

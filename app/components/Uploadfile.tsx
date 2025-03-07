@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileText, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "context/AuthContext";
 
 interface UploadedFile {
   id: string;
@@ -19,6 +20,103 @@ interface UploadFilesProps {
 
 export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
+
+
+const fileInputRef = useRef<HTMLInputElement>(null);
+const {user} = useAuth();
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
+    const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // Store
+
+  ///
+const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    setUploadError(null);
+    setUploadProgress(0);
+
+    if (!file) {
+      setUploadError("No file selected");
+      return;
+    }
+
+    if (!user) {
+      setUploadError("User not authenticated. Please sign in.");
+      return;
+    }
+
+    setUploading(true);
+    console.log("Starting upload for file:", file.name);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("uid", user.uid);
+
+      const simulateProgress = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) return prev;
+          return prev + 10;
+        });
+      }, 200);
+
+      const response = await fetch("/api/reportupload", {
+        method: "POST",
+        body: formData,
+      });
+      setUploadedFileName(file.name);
+
+      // const responseData = await response.json();
+
+      // const response2 = await fetch("/api/medicinereminders", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     user_id: user.uid,
+      //     name: responseData.file,
+      //   }),
+      // });
+
+      // if (!response2.ok) {
+      //   throw new Error(`HTTP error! status: ${response2.status}`);
+      // }
+      // const datatoupload = await response2.json();
+
+      // console.log(datatoupload);
+      // if (!datatoupload || !datatoupload.structuredData) {
+      //   throw new Error("No valid data received from server");
+      // }
+
+      
+
+      clearInterval(simulateProgress);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+
+      setUploadProgress(100);
+
+      alert("Successfully uploaded medication!");
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      setUploadError(error.message || "Failed to upload file");
+      alert(`Upload failed: ${error.message || "Unknown error"}`);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+
+
+
+
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -65,15 +163,28 @@ export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
             isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:bg-gray-50"
           }`}
         >
-          <input {...getInputProps()} />
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload} // ✅ Ensures input works
+            className="hidden"
+            accept="image/*,.pdf"
+          />
           <Upload className="mx-auto h-12 w-12 text-blue-500" />
           <h3 className="mt-2 text-lg font-medium text-gray-800">
             {isDragActive ? "Drop your file here" : "Drag and drop your files here"}
           </h3>
           <p className="mt-1 text-sm text-gray-600">or click to browse (PDF, Image, or Text files)</p>
-          <Button className="mt-4 bg-blue-500 text-white hover:bg-blue-600">Select Files</Button>
+          
+          {/* ✅ Fix: Trigger file input on button click */}
+          <Button 
+            className="mt-4 bg-blue-500 text-white hover:bg-blue-600"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Select Files
+          </Button>
         </div>
-
+  
         {files.length > 0 && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h3>
@@ -106,4 +217,5 @@ export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
       </CardContent>
     </Card>
   );
+  
 }
