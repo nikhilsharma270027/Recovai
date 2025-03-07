@@ -119,7 +119,7 @@ export default function MedicineReminders() {
               <h1 className="text-3xl font-bold text-gray-800">Medicine Reminders</h1>
               <p className="mt-2 text-sm text-gray-600">Smart medication tracking and timely reminders</p>
             </div>
-            <div className="flex items-center space-x-3 mt-4 md:mt-0">
+            {/* <div className="flex items-center space-x-3 mt-4 md:mt-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -132,86 +132,10 @@ export default function MedicineReminders() {
                 <Plus className="mr-2 h-4 w-4" />
                 Add Medication
               </Button>
-            </div>
+            </div> */}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-              <Card className="bg-white shadow-md hover:shadow-lg transition-shadow rounded-xl border border-blue-100">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-xl">
-                  <CardTitle className="text-sm font-semibold text-blue-700">Today's Medications</CardTitle>
-                  <Pill className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="text-2xl font-bold text-gray-800">
-                    {takenToday}/{totalToday}
-                  </div>
-                  <p className="text-xs text-gray-500">Medications taken today</p>
-                  <div className="mt-3">
-                    <Progress
-                      value={(takenToday / Math.max(totalToday, 1)) * 100}
-                      className="h-2 bg-blue-100"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              <Card className="bg-white shadow-md hover:shadow-lg transition-shadow rounded-xl border border-green-100">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-r from-green-50 to-green-100 rounded-t-xl">
-                  <CardTitle className="text-sm font-semibold text-green-700">Adherence Rate</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="text-2xl font-bold text-gray-800">{adherenceRate.toFixed(0)}%</div>
-                  <p className="text-xs text-gray-500">
-                    <span className="text-green-600 font-medium">↑ 3%</span> from last month
-                  </p>
-                  <div className="mt-3">
-                    <div className="h-2 w-[87%] bg-green-400 rounded"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-            >
-              <Card className="bg-white shadow-md hover:shadow-lg transition-shadow rounded-xl border border-purple-100">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-xl">
-                  <CardTitle className="text-sm font-semibold text-purple-700">Next Refill</CardTitle>
-                  <CalendarDays className="h-4 w-4 text-purple-500" />
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="text-2xl font-bold text-gray-800">May 30</div>
-                  <p className="text-xs text-gray-500">Metformin (500mg) - 10 days left</p>
-                  <div className="mt-3 flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7 px-2 bg-white text-purple-600 border-purple-200 hover:bg-purple-50"
-                    >
-                      Set Reminder
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7 px-2 bg-white text-purple-600 border-purple-200 hover:bg-purple-50"
-                    >
-                      Refill Now
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
+         
 
           <Tabs defaultValue="today" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-8 bg-white rounded-xl p-1 shadow-sm border border-gray-200">

@@ -177,74 +177,9 @@ export default function Hero() {
                 </li>
               </ul>
               <div className="flex flex-col space-y-8 mt-6">
-                {/* <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                  <a
-                    href="/signin"
-                    className="w-full sm:w-auto [box-shadow:0_-20px_80px_-20px_#CCE5FF_inset] bg-gradient-to-tr from-[#1E3A8A] to-[#3B82F6] text-white px-8 py-4 rounded-xl hover:shadow-lg hover:translate-y-[-2px] transition-all duration-200 text-center font-medium"
-                  >
-                    Get started for free
-                  </a>
-                  <div className="flex items-center space-x-6 text-sm text-gray-600">
-                    <a
-                      href="https://git.new/memory"
-                      className="flex items-center hover:text-[#1E3A8A] transition-colors group"
-                    >
-                      <GithubIcon className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
-                    </a>
-                    <a
-                      href="https://docs.supermemory.ai"
-                      className="flex items-center hover:text-[#1E3A8A] transition-colors group"
-                    >
-                      <svg
-                        className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                        />
-                      </svg>
-                      Documentation
-                    </a>
-                  </div>
-                </div> */}
-
-                {/* <div className="flex items-center space-x-4">
-                  <img
-                    src="/product-of-the-day.png"
-                    className="w-44 hover:opacity-90 transition-opacity"
-                    alt="Product of the Day on Product Hunt"
-                  />
-                </div> */}
+               
               </div>
             </div>
-
-            {/* Video Section */}
-            {/* <div className="w-full mt-24">
-              <div
-                style={{ position: "relative", paddingTop: "56.25%" }}
-                className="rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-300"
-              >
-                <iframe
-                  src="https://customer-5xczlbkyq4f9ejha.cloudflarestream.com/111c4828c3587348bc703e67bfca9682/iframe?muted=true&poster=https%3A%2F%2Fcustomer-5xczlbkyq4f9ejha.cloudflarestream.com%2F111c4828c3587348bc703e67bfca9682%2Fthumbnails%2Fthumbnail.jpg%3Ftime%3D%26height%3D600"
-                  loading="lazy"
-                  style={{
-                    border: "none",
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    height: "100%",
-                    width: "100%",
-                  }}
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                  allowFullScreen={true}
-                ></iframe>
-              </div>
-            </div> */}
           </div>
 
           {/* Feature Cards Section */}
@@ -266,8 +201,6 @@ export default function Hero() {
                 "Chrome Extension",
                 "iOS App",
                 "Slack",
-                // "Google Drive",
-                // "Microsoft Teams"
               ].map((tool) => (
                 <div
                   key={tool}

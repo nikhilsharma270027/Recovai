@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-
+import React from "react"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -17,7 +16,7 @@ interface FeatureCardProps {
   imageUrl: string
 }
 
-export function FeatureCard({ title, description, icon, color, hoverColor, route, imageUrl }: FeatureCardProps) {
+function FeatureCard({ title, description, icon, color, hoverColor, route, imageUrl }: FeatureCardProps) {
   const router = useRouter()
   const [isHovered, setIsHovered] = useState(false)
 
@@ -37,10 +36,8 @@ export function FeatureCard({ title, description, icon, color, hoverColor, route
 
       <div className="relative z-10 p-6 h-full flex flex-col">
         <div className={`p-3 rounded-lg ${color} w-fit mb-4`}>{icon}</div>
-
         <h3 className="text-xl font-bold mb-2">{title}</h3>
         <p className="text-gray-600 mb-6 flex-grow">{description}</p>
-
         <motion.div
           className={`flex items-center font-medium ${hoverColor} mt-auto`}
           animate={{ x: isHovered ? 5 : 0 }}
@@ -99,4 +96,3 @@ export default function FeatureCards() {
     </div>
   )
 }
-

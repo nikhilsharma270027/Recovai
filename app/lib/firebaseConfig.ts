@@ -4,13 +4,12 @@ import { getAnalytics } from "firebase/analytics";
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCQUMNh-ARruxS0K-azjCK6aNTKzceU7kQ",
-  authDomain: "recovai-5bb22.firebaseapp.com",
-  projectId: "recovai-5bb22",
-  storageBucket: "recovai-5bb22.appspot.com",
-  messagingSenderId: "57825583310",
-  appId: "1:57825583310:web:90544a5bb74acdd77ff09f",
-  measurementId: "G-ZX996ZJJGF",
+  apiKey: "AIzaSyD_hGht3h5Cp_wGsLb8qBmGpg9oQxunvAM",
+  authDomain: "freshdrink-b55c3.firebaseapp.com",
+  projectId: "freshdrink-b55c3",
+  storageBucket: "freshdrink-b55c3.appspot.com",
+  messagingSenderId: "321714451247",
+  appId: "1:321714451247:web:de4a274128e44528e8a7da"
 };
 
 // Initialize Firebase
