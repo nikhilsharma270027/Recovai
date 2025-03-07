@@ -12,14 +12,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing file or uid" }, { status: 400 });
     }
 
-    const filePath = `medicinereminders/${uid}/${Date.now()}_${file.name}`;
+    const filePath = `medicinereminders/${uid}/${file.name}`;
     const storageRef = ref(storage, filePath);
     
     const buffer = Buffer.from(await file.arrayBuffer());
     await uploadBytes(storageRef, buffer, { contentType: file.type });
     const downloadURL = await getDownloadURL(storageRef);
 
-    return NextResponse.json({ url: downloadURL, contentType: file.type }, { status: 200 });
+   
+
+    return NextResponse.json({ url: downloadURL, contentType: file.type, file: file.name }, { status: 200 });
   } catch (error: any) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

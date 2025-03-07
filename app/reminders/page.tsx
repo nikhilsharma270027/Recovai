@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "context/AuthContext";
 import { Sidebar } from "@/components/SideBar";
 import {
@@ -46,6 +46,42 @@ interface Medication {
 }
 
 export default function MedicineReminders() {
+  const [morningMeds, setMorningMeds] = useState<Medication[]>([]);
+  const [eveningMeds, setEveningMeds] = useState<Medication[]>([]);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // Store
+  console.log(uploadedFileName)
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       const response = await fetch("/api/medicinereminders", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           user_id: user?.uid,
+//           name: uploadedFileName,
+//         }),
+//       });
+
+//       if (!response.ok) {
+//         console.error("Error fetching prescription data");
+//         return;
+//       }
+// console.log(response)
+//       const data: PrescriptionData = await response.json();
+//       console.log(data)
+//       const { medications, recommendations } = data.structuredData;
+
+//       // Filter medicines based on time of day
+//       setMorningMeds(medications.filter((med: any) => med.time_of_day === "Morning"));
+//       setEveningMeds(medications.filter((med: any) => med.time_of_day === "Evening"));
+
+//       setRecommendations(recommendations);
+//     };
+
+//     fetchData();
+//   }, []);
+
+  /////////////
   const { user, loading } = useAuth();
   const [medications, setMedications] = useState<Medication[]>([
     
@@ -92,10 +128,28 @@ export default function MedicineReminders() {
         });
       }, 200);
 
+
+
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
+      setUploadedFileName(file.name); 
+      
+      const responseData = await response.json(); // Store result in a variable
+      
+      const response2 = await fetch("/api/medicinereminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.uid,
+          name: responseData.file, 
+        }),
+      });
+      
+      console.log(await response2.json()); // Log second response
+      
+      
 
       clearInterval(simulateProgress);
 
@@ -104,24 +158,11 @@ export default function MedicineReminders() {
         throw new Error(`Upload failed: ${errorText}`);
       }
 
-      const { url, contentType } = await response.json();
+     
       setUploadProgress(100);
       
-      const newMedication: Medication = {
-        id: `med${medications.length + 1}`,
-        name: file.name.split(".")[0],
-        dosage: "N/A",
-        frequency: "N/A",
-        timeOfDay: ["Morning"],
-        nextDose: "Today, 8:00 AM",
-        refillDate: new Date().toLocaleDateString(),
-        adherence: 0,
-        imageUrl: url,
-        contentType: contentType,
-        taken: false,
-      };
+      
 
-      setMedications([...medications, newMedication]);
       alert("Successfully uploaded medication!");
     } catch (error: any) {
       console.error("Upload failed:", error);
@@ -348,49 +389,7 @@ export default function MedicineReminders() {
                   </div>
                 </CardContent>
               </Card>
-{/* 
-              <Card className="bg-indigo-50 shadow-md rounded-xl border border-gray-100">
-                <CardHeader className="bg-gradient-to-r  rounded-t-xl">
-                  <CardTitle className="text-lg font-semibold text-gray-800">
-                    Upcoming Medications
-                  </CardTitle>
-                  <CardDescription className="text-gray-600">
-                    Your medication schedule for the next few days
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    {upcomingMedications.map((med) => (
-                      <div
-                        key={med.id}
-                        className="flex items-center justify-between p-3 border-b border-gray-200 last:border-0"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                            <Pill className="h-5 w-5 text-teal-500" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-800">
-                              {med.name} {med.dosage}
-                            </h4>
-                            <p className="text-sm text-gray-500">
-                              {med.nextDose}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-teal-600 hover:text-teal-700"
-                        >
-                          <Bell className="h-4 w-4" />
-                          <span className="sr-only">Set reminder</span>
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card> */}
+
             </TabsContent>
 
             <TabsContent value="medications" className="space-y-6">
@@ -493,6 +492,42 @@ export default function MedicineReminders() {
           </Tabs>
         </div>
       </main>
+                <div className="p-6">
+                <h1 className="text-2xl font-bold">Medicine Reminders</h1>
+
+                <section className="mt-4">
+                  <h2 className="text-xl font-semibold">🌞 Morning Medications</h2>
+                  <ul>
+                    {morningMeds.map((med, index) => (
+                      <li key={index} className="border p-2 mt-2 rounded">
+                        <strong>{med.name}</strong> - {med.dosage} ({med.frequency})<br />
+                        <em>{med.instructions}</em>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="mt-4">
+                  <h2 className="text-xl font-semibold">🌙 Evening Medications</h2>
+                  <ul>
+                    {eveningMeds.map((med, index) => (
+                      <li key={index} className="border p-2 mt-2 rounded">
+                        <strong>{med.name}</strong> - {med.dosage} ({med.frequency})<br />
+                        <em>{med.instructions}</em>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="mt-4">
+                  <h2 className="text-xl font-semibold">📌 Recommendations</h2>
+                  <ul>
+                    {recommendations.map((rec, index) => (
+                      <li key={index} className="border p-2 mt-2 rounded">{rec}</li>
+                    ))}
+                  </ul>
+                </section>
+            </div>
     </div>
   );
 }
