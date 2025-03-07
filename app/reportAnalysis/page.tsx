@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Upload,
   X,
@@ -34,6 +34,8 @@ import { motion } from "framer-motion";
 import { Textarea } from "@/components/ui/textarea";
 import ReportExtract from "@/components/FileExtract";
 import UploadFiles from "@/components/Uploadfile";
+import { getDownloadURL, getMetadata, listAll, ref } from "firebase/storage";
+import { storage } from "@/lib/firebaseConfig";
 
 type UploadedFile = {
   id: string;
@@ -61,38 +63,37 @@ export default function ReportAnalysis() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { user, loading } = useAuth();
-  const [files, setFiles] = useState<UploadedFile[]>([
-    {
-      id: "1",
-      name: "Blood_Test_Results_2023.pdf",
-      size: 2500000,
-      type: "application/pdf",
-      progress: 100,
-      status: "complete",
-      date: "2023-11-15",
-      insights: [
-        "Vitamin D levels are below optimal range",
-        "Cholesterol levels are within normal range",
-        "Iron levels indicate mild anemia",
-      ],
-    },
-    {
-      id: "2",
-      name: "MRI_Scan_Report.pdf",
-      size: 15000000,
-      type: "application/pdf",
-      progress: 100,
-      status: "complete",
-      date: "2023-10-22",
-      insights: [
-        "No significant abnormalities detected",
-        "Minor inflammation in the right knee joint",
-        "Recommended follow-up in 6 months",
-      ],
-    },
-  ]);
+  const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTab, setActiveTab] = useState("upload");
+
+  useEffect(() => {
+    const fetchFiles = async () => {
+      if (!user?.uid) return;
+
+      try {
+        const storageRef = ref(storage, `/reportanalysis/${user.uid}`);
+        const fileList = await listAll(storageRef);
+
+        const fileMetadataPromises = fileList.items.map(async (fileRef) => {
+          const metadata = await getMetadata(fileRef);
+          const downloadURL = await getDownloadURL(fileRef);
+          return { ...metadata, downloadURL };
+
+        });
+
+        const filesWithMetadata = await Promise.all(fileMetadataPromises);
+        setFiles(filesWithMetadata as any);
+      } catch (error) {
+        console.error("Error fetching files from Firebase Storage:", error);
+      }
+    };
+
+    fetchFiles();
+  }, [user?.uid]);
+
+  console.log(files)
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -140,12 +141,12 @@ export default function ReportAnalysis() {
           prev.map((file) =>
             file.id === fileId
               ? {
-                  ...file,
-                  progress,
-                  status: "complete",
-                  date: new Date().toISOString().split("T")[0],
-                  insights: randomInsights,
-                }
+                ...file,
+                progress,
+                status: "complete",
+                date: new Date().toISOString().split("T")[0],
+                insights: randomInsights,
+              }
               : file
           )
         );
@@ -221,6 +222,24 @@ export default function ReportAnalysis() {
     0
   );
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   return (
     <div className="flex h-screen w-full">
       <Sidebar user={user} />
@@ -235,20 +254,7 @@ export default function ReportAnalysis() {
                 AI-powered medical report analysis and insights
               </p>
             </div>
-            {/* <div className="flex items-center space-x-3 mt-4 md:mt-0">
-            <Button variant="outline" size="sm" className="bg-white text-gray-700 border-gray-300 hover:bg-gray-100">
-              <Filter className="mr-2 h-4 w-4 text-blue-500" />
-              Filter
-            </Button>
-            <Button variant="outline" size="sm" className="bg-white text-gray-700 border-gray-300 hover:bg-gray-100">
-              <Search className="mr-2 h-4 w-4 text-purple-500" />
-              Search
-            </Button>
-            <Button size="sm" className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-          </div> */}
+
           </div>
 
           <Tabs
@@ -273,14 +279,14 @@ export default function ReportAnalysis() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="upload" >
+            <TabsContent value="upload" className="space-y-6">
               <div className="space-y-6 ">
                 <UploadFiles onFileSelect={setSelectedFile} />
                 {/* {selectedFile && <ReportExtract file={selectedFile} />} */}
               </div>
             </TabsContent>
 
-            
+
 
             <TabsContent value="insights" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -517,7 +523,7 @@ export default function ReportAnalysis() {
                     <div className="divide-y divide-gray-200">
                       {files.map((file) => (
                         <div
-                          key={file.id}
+                          key={file.fullPath}
                           className="grid grid-cols-5 p-4 items-center hover:bg-gray-50">
                           <div className="col-span-2 flex items-center space-x-3">
                             <FileText className="h-5 w-5 text-blue-400" />
@@ -526,25 +532,15 @@ export default function ReportAnalysis() {
                             </span>
                           </div>
                           <div className="text-gray-600">
-                            {file.date || "N/A"}
+                            {new Date(file.timeCreated).toLocaleDateString()}
                           </div>
                           <div className="text-gray-600">
-                            {file.type.split("/")[1].toUpperCase()}
+                            {file.contentType.split("/")[1].toUpperCase()}
                           </div>
                           <div>
-                            {file.status === "complete" ? (
-                              <Badge className="bg-green-100 text-green-700 border-green-200">
-                                Analyzed
-                              </Badge>
-                            ) : file.status === "uploading" ? (
-                              <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                                Uploading
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-red-100 text-red-700 border-red-200">
-                                Error
-                              </Badge>
-                            )}
+                            <Badge className="bg-green-100 text-green-700 border-green-200">
+                              Analyzed
+                            </Badge>
                           </div>
                         </div>
                       ))}
