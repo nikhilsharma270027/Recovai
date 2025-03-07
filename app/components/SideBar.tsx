@@ -10,6 +10,7 @@ import {
   FileText,
   BarChart,
   LogOut,
+  MessageSquareText,
   Activity,
   FileScanIcon as FileAnalytics,
   Clock,
@@ -34,7 +35,7 @@ export function Sidebar({ user }: SidebarProps) {
     { name: "Report Analysis", href: "/reportAnalysis", icon: FileAnalytics, color: "text-purple-500" },
     { name: "Medicine Reminders", href: "/reminders", icon: Clock, color: "text-teal-500" },
     { name: "Users", href: "/User", icon: Users, color: "text-indigo-500" },
-    // { name: "Reports", href: "/reports", icon: FileText, color: "text-blue-400" },
+    { name: "Chat", href: "/chat", icon: MessageSquareText, color: "text-blue-400" },
     // { name: "Analytics", href: "/analytics", icon: BarChart, color: "text-purple-400" },
     // { name: "Settings", href: "/settings", icon: Settings, color: "text-gray-500" },
   ];
