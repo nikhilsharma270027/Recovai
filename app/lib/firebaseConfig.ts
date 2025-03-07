@@ -4,14 +4,15 @@ import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 
-// Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyD_hGht3h5Cp_wGsLb8qBmGpg9oQxunvAM",
-  authDomain: "freshdrink-b55c3.firebaseapp.com",
-  projectId: "freshdrink-b55c3",
-  storageBucket: "freshdrink-b55c3.appspot.com",
-  messagingSenderId: "321714451247",
-  appId: "1:321714451247:web:de4a274128e44528e8a7da"
+  apiKey: "AIzaSyDzfmlSbrin2xL7jyMhboohFlL2-DExGUo",
+  authDomain: "fruitsinmug.firebaseapp.com",
+  projectId: "fruitsinmug",
+  storageBucket: "fruitsinmug.appspot.com",
+  messagingSenderId: "483523562273",
+  appId: "1:483523562273:web:f99cd514796839ad830c60",
+  measurementId: "G-PDKLCMQLW7"
 };
 
 // Initialize Firebase

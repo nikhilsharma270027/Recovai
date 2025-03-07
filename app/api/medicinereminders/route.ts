@@ -7,7 +7,7 @@ import { generateText } from 'ai';
 
 // Initialize Firebase Admin
 customInitApp();
-const bucket = getStorage().bucket('freshdrink-b55c3.appspot.com');
+const bucket = getStorage().bucket('fruitsinmug.appspot.com');
 
 function validateStructuredResponse(response: any) {
   return Array.isArray(response?.medications) && response.medications.every((med: any) => {

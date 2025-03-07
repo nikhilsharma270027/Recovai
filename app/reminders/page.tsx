@@ -30,63 +30,41 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
+import { db } from "@/lib/firebaseConfig";
 
 interface Medication {
-  id: string;
-  name: string;
   dosage: string;
+  duration: string;
   frequency: string;
-  timeOfDay: string[];
-  nextDose: string;
-  refillDate: string;
-  adherence: number;
-  imageUrl: string;
-  contentType?: string; // Add contentType to store file MIME type
-  taken: boolean;
+  instructions: string;
+  name: string;
+  time_of_day: string; // Corrected typo here
+}
+
+interface PrescriptionData {
+  medications: Medication[];
+  recommendations: string[];
+  text: string;
+  uploadDate: string;
 }
 
 export default function MedicineReminders() {
-  const [morningMeds, setMorningMeds] = useState<Medication[]>([]);
-  const [eveningMeds, setEveningMeds] = useState<Medication[]>([]);
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // Store
-  console.log(uploadedFileName)
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       const response = await fetch("/api/medicinereminders", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           user_id: user?.uid,
-//           name: uploadedFileName,
-//         }),
-//       });
+  const [prescriptionData, setPrescriptionData] = useState<Medication[]>([]); // Changed type to Medication[]
+  const [medications, setMedications] = useState<Medication[]>([]);
 
-//       if (!response.ok) {
-//         console.error("Error fetching prescription data");
-//         return;
-//       }
-// console.log(response)
-//       const data: PrescriptionData = await response.json();
-//       console.log(data)
-//       const { medications, recommendations } = data.structuredData;
-
-//       // Filter medicines based on time of day
-//       setMorningMeds(medications.filter((med: any) => med.time_of_day === "Morning"));
-//       setEveningMeds(medications.filter((med: any) => med.time_of_day === "Evening"));
-
-//       setRecommendations(recommendations);
-//     };
-
-//     fetchData();
-//   }, []);
-
-  /////////////
   const { user, loading } = useAuth();
-  const [medications, setMedications] = useState<Medication[]>([
-    
-  ]);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -98,16 +76,54 @@ export default function MedicineReminders() {
     );
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const fetchMedications = async () => {
+      if (!user) {
+        console.error("User not authenticated. Cannot fetch medications.");
+        return;
+      }
+
+      try {
+        const userPrescriptionsRef = doc(
+          db,
+          "users",
+          user.uid,
+          "medicinereminders",
+          "medications"
+        );
+        const docSnap = await getDoc(userPrescriptionsRef);
+
+        if (docSnap.exists()) {
+          // Correctly access the medications array from the document data
+          const data = docSnap.data();
+          if (data && data.medications && Array.isArray(data.medications)) {
+            setPrescriptionData(data.medications as Medication[]); // Cast to Medication[]
+          } else {
+            setPrescriptionData([]);
+          }
+        } else {
+          setPrescriptionData([]);
+        }
+      } catch (error) {
+        console.error("Error fetching medications from Firebase:", error);
+      }
+    };
+
+    fetchMedications();
+  }, [user]);
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     setUploadError(null);
     setUploadProgress(0);
-    
+
     if (!file) {
       setUploadError("No file selected");
       return;
     }
-    
+
     if (!user) {
       setUploadError("User not authenticated. Please sign in.");
       return;
@@ -115,7 +131,7 @@ export default function MedicineReminders() {
 
     setUploading(true);
     console.log("Starting upload for file:", file.name);
-    
+
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -128,28 +144,57 @@ export default function MedicineReminders() {
         });
       }, 200);
 
-
-
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
-      setUploadedFileName(file.name); 
-      
-      const responseData = await response.json(); // Store result in a variable
-      
+      setUploadedFileName(file.name);
+
+      const responseData = await response.json();
+
       const response2 = await fetch("/api/medicinereminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: user.uid,
-          name: responseData.file, 
+          name: responseData.file,
         }),
       });
-      
-      console.log(await response2.json()); // Log second response
-      
-      
+
+      if (!response2.ok) {
+        throw new Error(`HTTP error! status: ${response2.status}`);
+      }
+      const datatoupload = await response2.json();
+
+      console.log(datatoupload);
+      if (!datatoupload || !datatoupload.structuredData) {
+        throw new Error("No valid data received from server");
+      }
+
+      try {
+        const userPrescriptionsRef = doc(
+          db,
+          "users",
+          user.uid,
+          "medicinereminders",
+          "medications"
+        );
+        const newMedications = datatoupload.structuredData.medications;
+
+        await setDoc(
+          userPrescriptionsRef,
+          {
+            medications: arrayUnion(...newMedications),
+            uploadDate: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        console.log("Medications updated successfully");
+      } catch (error) {
+        console.error("Error storing prescription in Firebase:", error);
+        throw error;
+      }
 
       clearInterval(simulateProgress);
 
@@ -158,10 +203,7 @@ export default function MedicineReminders() {
         throw new Error(`Upload failed: ${errorText}`);
       }
 
-     
       setUploadProgress(100);
-      
-      
 
       alert("Successfully uploaded medication!");
     } catch (error: any) {
@@ -180,24 +222,9 @@ export default function MedicineReminders() {
     fileInputRef.current?.click();
   };
 
-  // Helper function to check if contentType is an image
   const isImageContentType = (contentType?: string) => {
     return contentType?.startsWith("image/");
   };
-
-  const todaysMedications = medications.filter((med) =>
-    med.nextDose.includes("Today")
-  );
-  const upcomingMedications = medications.filter(
-    (med) => !med.nextDose.includes("Today")
-  );
-  const takenToday = medications.filter(
-    (med) => med.nextDose.includes("Today") && med.taken
-  ).length;
-  const totalToday = todaysMedications.length;
-  const adherenceRate =
-    medications.reduce((acc, med) => acc + med.adherence, 0) /
-    medications.length;
 
   if (loading) {
     return (
@@ -224,21 +251,20 @@ export default function MedicineReminders() {
           </div>
 
           <Tabs defaultValue="today" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
-          <TabsTrigger
-            value="today"
-            className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg"
-          >
-            Today's Schedule
-          </TabsTrigger>
-          <TabsTrigger
-            value="medications"
-            className="text-gray-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 rounded-lg"
-          >
-            My Medications
-          </TabsTrigger>
-        </TabsList>
-
+            <TabsList className="grid w-full grid-cols-2 mb-8 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
+              <TabsTrigger
+                value="today"
+                className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg"
+              >
+                Today's Schedule
+              </TabsTrigger>
+              <TabsTrigger
+                value="medications"
+                className="text-gray-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 rounded-lg"
+              >
+                My Medications
+              </TabsTrigger>
+            </TabsList>
             <TabsContent value="today" className="space-y-6">
               <Card className="bg-blue-50 shadow-md rounded-xl border border-gray-100">
                 <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
@@ -251,14 +277,6 @@ export default function MedicineReminders() {
                         Track your medication intake for today
                       </CardDescription>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                    >
-                      <Bell className="mr-2 h-4 w-4 text-blue-500" />
-                      Notification Settings
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
@@ -268,57 +286,33 @@ export default function MedicineReminders() {
                         Morning
                       </h3>
                       <div className="space-y-3">
-                        {medications
-                          .filter(
-                            (med) =>
-                              med.timeOfDay.includes("Morning") &&
-                              med.nextDose.includes("Today")
-                          )
-                          .map((med) => (
+                        {prescriptionData
+                          .filter((med) => med.time_of_day === "Morning")
+                          .map((med, index) => (
                             <div
-                              key={med.id}
+                              key={index}
                               className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                             >
                               <div className="flex items-center space-x-4">
                                 <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                  {isImageContentType(med.contentType) ? (
-                                    <Image
-                                      src={med.imageUrl || "/placeholder.svg"}
-                                      alt={med.name}
-                                      width={40}
-                                      height={40}
-                                      className="rounded-full"
-                                    />
-                                  ) : (
-                                    <Pill className="h-6 w-6 text-blue-500" />
-                                  )}
+                                  <Pill className="h-6 w-6 text-blue-500" />
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-gray-800">
                                     {med.name} {med.dosage}
                                   </h4>
                                   <p className="text-sm text-gray-500">
-                                    {med.frequency}
+                                    {med.frequency} - {med.instructions}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
-                                <div className="text-sm text-gray-600">
-                                  8:00 AM
-                                </div>
-                                {med.taken ? (
-                                  <Badge className="bg-green-100 text-green-700 border-green-200">
-                                    Taken
-                                  </Badge>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    className="bg-blue-500 text-white hover:bg-blue-600"
-                                    onClick={() => markAsTaken(med.id)}
-                                  >
-                                    Mark as Taken
-                                  </Button>
-                                )}
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-500 text-white hover:bg-blue-600"
+                                >
+                                  Mark as Taken
+                                </Button>
                               </div>
                             </div>
                           ))}
@@ -330,57 +324,33 @@ export default function MedicineReminders() {
                         Evening
                       </h3>
                       <div className="space-y-3">
-                        {medications
-                          .filter(
-                            (med) =>
-                              med.timeOfDay.includes("Evening") &&
-                              med.nextDose.includes("Today")
-                          )
-                          .map((med) => (
+                        {prescriptionData
+                          .filter((med) => med.time_of_day === "Evening")
+                          .map((med, index) => (
                             <div
-                              key={med.id}
+                              key={index}
                               className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                             >
                               <div className="flex items-center space-x-4">
                                 <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                                  {isImageContentType(med.contentType) ? (
-                                    <Image
-                                      src={med.imageUrl || "/placeholder.svg"}
-                                      alt={med.name}
-                                      width={40}
-                                      height={40}
-                                      className="rounded-full"
-                                    />
-                                  ) : (
-                                    <Pill className="h-6 w-6 text-purple-500" />
-                                  )}
+                                  <Pill className="h-6 w-6 text-purple-500" />
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-gray-800">
                                     {med.name} {med.dosage}
                                   </h4>
                                   <p className="text-sm text-gray-500">
-                                    {med.frequency}
+                                    {med.frequency} - {med.instructions}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
-                                <div className="text-sm text-gray-600">
-                                  8:00 PM
-                                </div>
-                                {med.taken ? (
-                                  <Badge className="bg-green-100 text-green-700 border-green-200">
-                                    Taken
-                                  </Badge>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    className="bg-blue-500 text-white hover:bg-blue-600"
-                                    onClick={() => markAsTaken(med.id)}
-                                  >
-                                    Mark as Taken
-                                  </Button>
-                                )}
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-500 text-white hover:bg-blue-600"
+                                >
+                                  Mark as Taken
+                                </Button>
                               </div>
                             </div>
                           ))}
@@ -389,7 +359,6 @@ export default function MedicineReminders() {
                   </div>
                 </CardContent>
               </Card>
-
             </TabsContent>
 
             <TabsContent value="medications" className="space-y-6">
@@ -440,16 +409,16 @@ export default function MedicineReminders() {
                       <Progress value={uploadProgress} className="mb-4" />
                     )}
                     <div className="space-y-4">
-                      {medications.map((med) => (
+                      {prescriptionData.map((med) => (
                         <div
-                          key={med.id}
+                          key={med.name} // Use a unique identifier, assuming name is unique
                           className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-center space-x-4">
                             <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                              {isImageContentType(med.contentType) ? (
+                              {isImageContentType(med.name) ? ( //This part is incorrect.  med.name is not content type.  Content type is not available on this object.
                                 <Image
-                                  src={med.imageUrl || "/placeholder.svg"}
+                                  src={"/placeholder.svg"} // No image URL available. Using default placeholder
                                   alt={med.name}
                                   width={40}
                                   height={40}
@@ -472,7 +441,7 @@ export default function MedicineReminders() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                              Refill: {med.refillDate}
+                              {/* Refill: {med.refillDate} Refill date not available.*/}
                             </Badge>
                             <Button
                               variant="ghost"
@@ -492,42 +461,6 @@ export default function MedicineReminders() {
           </Tabs>
         </div>
       </main>
-                <div className="p-6">
-                <h1 className="text-2xl font-bold">Medicine Reminders</h1>
-
-                <section className="mt-4">
-                  <h2 className="text-xl font-semibold">🌞 Morning Medications</h2>
-                  <ul>
-                    {morningMeds.map((med, index) => (
-                      <li key={index} className="border p-2 mt-2 rounded">
-                        <strong>{med.name}</strong> - {med.dosage} ({med.frequency})<br />
-                        <em>{med.instructions}</em>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-
-                <section className="mt-4">
-                  <h2 className="text-xl font-semibold">🌙 Evening Medications</h2>
-                  <ul>
-                    {eveningMeds.map((med, index) => (
-                      <li key={index} className="border p-2 mt-2 rounded">
-                        <strong>{med.name}</strong> - {med.dosage} ({med.frequency})<br />
-                        <em>{med.instructions}</em>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-
-                <section className="mt-4">
-                  <h2 className="text-xl font-semibold">📌 Recommendations</h2>
-                  <ul>
-                    {recommendations.map((rec, index) => (
-                      <li key={index} className="border p-2 mt-2 rounded">{rec}</li>
-                    ))}
-                  </ul>
-                </section>
-            </div>
     </div>
   );
 }
