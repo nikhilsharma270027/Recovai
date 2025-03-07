@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'File user_id is required' }, { status: 400 });
         }
 
-        const file = bucket.file(`medicinereminders/${user_id}/${name}`);
+        const file = bucket.file(`reportanalysis/${user_id}/${name}`);
         const [exists] = await file.exists();
 
         if (!exists) {

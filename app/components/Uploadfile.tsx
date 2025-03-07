@@ -6,7 +6,7 @@ import { Upload, FileText, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "context/AuthContext";
-import { arrayUnion, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, arrayUnion, collection, doc, Firestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
 
 interface UploadedFile {
@@ -95,35 +95,27 @@ export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
         throw new Error("No valid data received from server");
       }
 
-      // Extract insights
-      const insights = datatoupload.structuredData.insights.map(
-        (item: { insight: string }) => item.insight
-      );
+      const { file_name, analyzed_on, insights } = datatoupload.structuredData;
 
-      // Store in Firebase Firestore
+      // Create a unique document for each report
       try {
-        const userPrescriptionsRef = doc(
-          db,
-          "users",
-          user.uid,
-          "reportinsights",
-          "insights"
-        );
-
-        await setDoc(
-          userPrescriptionsRef,
-          {
-            insights: arrayUnion(...insights), // Store only insights
-            uploadDate: serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        console.log("Medications updated successfully");
+        const userReportRef = collection(db, "users", user.uid, "reportinsights");
+      
+        await addDoc(userReportRef, {
+          file_name,
+          analyzed_on,
+          insights, // Store full insight objects
+          uploadDate: serverTimestamp(),
+        });
+      
+        console.log("Report insights stored successfully");
       } catch (error) {
-        console.error("Error storing prescription in Firebase:", error);
+        console.error("Error storing report insights in Firebase:", error);
         throw error;
       }
+
+
+      
       clearInterval(simulateProgress);
       setUploadProgress(100);
       alert("Successfully uploaded medication!");
@@ -246,3 +238,4 @@ export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
     </Card>
   );
 }
+
