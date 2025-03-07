@@ -6,6 +6,8 @@ import { useAuth } from "context/AuthContext"
 import { Logo } from "../assets/Logo"
 import { useEffect } from "react"
 import FeatureCards from "./featurecards"
+import Image from "next/image";
+import logo from "../../public/logo-recov.ico"
 
 interface PlusPatternBackgroundProps {
   plusSize?: number
@@ -96,7 +98,7 @@ export default function Hero() {
             {/* Left section */}
             <div className="flex items-center space-x-8">
               <div className="inline-flex gap-2 items-center">
-                <Logo />
+                <Image src={logo} alt="Recovai" width={40} height={40} />
                 <span className="text-lg lg:text-xl font-medium bg-clip-text text-black bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
                   Recov.ai
                 </span>

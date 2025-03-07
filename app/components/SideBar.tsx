@@ -44,7 +44,7 @@ export function Sidebar({ user }: SidebarProps) {
     <aside className="flex h-full w-64 flex-col bg-gradient-to-b from-white to-gray-50 shadow-lg border-r border-gray-200">
       {/* Header */}
       <div className="flex h-16 items-center justify-between px-4 bg-gradient-to-r border-b border-blue-700 shadow-sm">
-        <div className="flex justify-center items-center">
+        <div className="flex justify-center items-center gap-2">
         <Image src={logo} alt="Recovai" width={40} height={40} />
         <h1 className="text-2xl font-bold text-black tracking-tight">Recov.ai</h1>
 
