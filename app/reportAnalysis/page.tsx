@@ -210,7 +210,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
             <h1 className="text-3xl font-bold text-gray-800">Report Analysis</h1>
             <p className="mt-2 text-sm text-gray-600">AI-powered medical report analysis and insights</p>
           </div>
-          <div className="flex items-center space-x-3 mt-4 md:mt-0">
+          {/* <div className="flex items-center space-x-3 mt-4 md:mt-0">
             <Button variant="outline" size="sm" className="bg-white text-gray-700 border-gray-300 hover:bg-gray-100">
               <Filter className="mr-2 h-4 w-4 text-blue-500" />
               Filter
@@ -223,7 +223,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-          </div>
+          </div> */}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useRouter } from "next/navigation"
 import { useAuth } from "context/AuthContext"
 import { Logo } from "../assets/Logo"
@@ -49,13 +48,37 @@ export const BackgroundPlus: React.FC<PlusPatternBackgroundProps> = ({
 }
 
 export default function Hero() {
-  const { user, login } = useAuth()
-
+  const { user, login, loading } = useAuth() // Add loading to check auth state
   const router = useRouter()
 
   useEffect(() => {
-    if (user) router.push("/")
-  }, [user])
+    console.log("User:", user) // Debug: Log user state
+    console.log("Loading:", loading) // Debug: Log loading state
+    console.log("Current pathname:", window.location.pathname) // Debug: Log current route
+
+    // Only redirect when loading is false and user exists
+    if (!loading && user && window.location.pathname !== "/dashboard") {
+      console.log("Attempting redirect to /dashboard")
+      router.push("/dashboard")
+      // Fallback: Force navigation if router.push doesn't work
+      setTimeout(() => {
+        if (window.location.pathname !== "/dashboard") {
+          console.log("Fallback: Forcing redirect to /dashboard")
+          window.location.href = "/dashboard"
+        }
+      }, 500) // Wait 500ms to check if router.push worked
+    }
+  }, [user, loading, router])
+
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="relative z-[10] min-h-screen overflow-hidden">
       <div className="fixed bottom-0 left-0 right-0 flex justify-center z-[45] pointer-events-none">
@@ -79,13 +102,7 @@ export default function Hero() {
                 </span>
               </div>
               <nav className="hidden lg:flex items-center space-x-8">
-                {/* Products dropdown commented out for now
-                <Popover className="relative">
-                  ...
-                </Popover>
-                */}
-
-                <a href="https://docs.supermemory.ai" className="text-gray-600 hover:text-gray-900 transition-colors">
+                <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">
                   Docs
                 </a>
               </nav>
@@ -93,42 +110,17 @@ export default function Hero() {
 
             {/* Right section */}
             <div className="flex items-center space-x-6">
-              {/* <div className="hidden sm:flex items-center space-x-6">
-                <a
-                  href="https://git.new/memory"
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <GithubIcon className="h-6 w-6" />
-                </a>
-                <a
-                  href="https://discord.gg/b3BgKWpbtR"
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <DiscordIcon className="h-6 w-6" />
-                </a>
-              </div> */}
-              {/* <div className="flex items-center space-x-4" onClick={login}>
-                <a
-                  // href="/signin"
-
-                  className="[box-shadow:0_-20px_80px_-20px_#CCE5FF_inset] bg-[#1E3A8A] text-white px-5 py-2.5 rounded-lg hover:bg-opacity-90 transition-all duration-200 hover:translate-y-[-1px]"
-                >
-                  Get started
-                </a>
-              </div> */}
               <div className="flex items-center space-x-6">
                 {user ? (
-                  // Display user profile when logged in
                   <div className="flex items-center space-x-4">
                     <img
-                      src={user.photoURL || "/default-avatar.png"} // Fallback avatar
+                      src={user.photoURL || "/default-avatar.png"}
                       alt={user.displayName || "User"}
                       className="w-10 h-10 rounded-full border"
                     />
                     <span className="text-gray-800 font-medium">{user.displayName || "User"}</span>
                   </div>
                 ) : (
-                  // Show login button when user is not logged in
                   <div className="flex items-center space-x-4" onClick={login}>
                     <a className="bg-[#1E3A8A] text-white px-5 py-2.5 rounded-lg hover:bg-opacity-90 transition-all duration-200 hover:translate-y-[-1px]">
                       Get started
@@ -147,15 +139,12 @@ export default function Hero() {
           <div className="grid lg:grid-cols-2 gap-8 items-start">
             {/* Hero Content */}
             <div className="text-left max-w-xl mx-auto lg:mx-0">
-              {/* Announcement Banner */}
-
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight leading-[1.1]">
                 Your AI-Powered Recovery & Medication Assistant
               </h1>
               <p className="text-xl text-gray-600 mt-6 mb-8 leading-relaxed">
                 Personalized care, real-time guidance, better health outcomes.
               </p>
-              {/* list of notable features */}
               <ul className="list-none space-y-3 mt-6">
                 <li className="flex items-center space-x-3">
                   <svg className="h-5 w-5 text-[#3B82F6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -177,7 +166,6 @@ export default function Hero() {
                 </li>
               </ul>
               <div className="flex flex-col space-y-8 mt-6">
-               
               </div>
             </div>
           </div>
@@ -216,4 +204,3 @@ export default function Hero() {
     </div>
   )
 }
-
