@@ -247,16 +247,16 @@ export default function MedicineReminders() {
           </div>
 
           <Tabs defaultValue="today" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
+            <TabsList className="grid w-full grid-cols-2 mb-8 bg-white rounded-xl p-0 shadow-sm border border-gray-200">
               <TabsTrigger
                 value="today"
-                className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg"
+                className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg p-1.5"
               >
                 Today's Schedule
               </TabsTrigger>
               <TabsTrigger
                 value="medications"
-                className="text-gray-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 rounded-lg"
+                className="text-gray-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 rounded-lg p-1.5"
               >
                 My Medications
               </TabsTrigger>

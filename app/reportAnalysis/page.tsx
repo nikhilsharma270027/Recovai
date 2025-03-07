@@ -258,17 +258,17 @@ export default function ReportAnalysis() {
             <TabsList className="grid w-full grid-cols-3 mb-8 bg-white rounded-xl p-0 shadow-sm border border-gray-200">
               <TabsTrigger
                 value="upload"
-                className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg">
+                className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg p-1.5">
                 Upload Reports
               </TabsTrigger>
               <TabsTrigger
                 value="insights"
-                className="text-gray-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 rounded-lg">
+                className="text-gray-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 rounded-lg p-1.5">
                 AI Insights
               </TabsTrigger>
               <TabsTrigger
                 value="history"
-                className="text-gray-700 data-[state=active]:bg-green-100 data-[state=active]:text-green-700 rounded-lg">
+                className="text-gray-700 data-[state=active]:bg-green-100 data-[state=active]:text-green-700 rounded-lg p-1.5">
                 Report History
               </TabsTrigger>
             </TabsList>

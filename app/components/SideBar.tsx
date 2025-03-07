@@ -2,7 +2,7 @@
 
 import type { User } from "firebase/auth";
 import Image from "next/image";
-import logo from "../assets/logo-recovai.jpeg"
+import logo from "../../public/logo-recov.ico"
 import {
   LayoutDashboard,
   Settings,
@@ -46,7 +46,7 @@ export function Sidebar({ user }: SidebarProps) {
       <div className="flex h-16 items-center justify-between px-4 bg-gradient-to-r border-b border-blue-700 shadow-sm">
         <div className="flex justify-center items-center">
         <Image src={logo} alt="Recovai" width={40} height={40} />
-        <h1 className="text-xl font-bold text-black tracking-tight">Recov.ai</h1>
+        <h1 className="text-2xl font-bold text-black tracking-tight">Recov.ai</h1>
 
         </div>
       </div>

@@ -6,6 +6,8 @@ import { Upload, FileText, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "context/AuthContext";
+import { arrayUnion, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebaseConfig";
 
 interface UploadedFile {
   id: string;
@@ -15,22 +17,20 @@ interface UploadedFile {
 }
 
 interface UploadFilesProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File | null) => void;
 }
 
 export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // Store
 
-const fileInputRef = useRef<HTMLInputElement>(null);
-const {user} = useAuth();
-    const [uploading, setUploading] = useState(false);
-    const [uploadError, setUploadError] = useState<string | null>(null);
-    const [uploadProgress, setUploadProgress] = useState<number>(0);
-    const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // Store
-
-  ///
-const handleFileUpload = async (
+  const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
@@ -49,6 +49,7 @@ const handleFileUpload = async (
 
     setUploading(true);
     console.log("Starting upload for file:", file.name);
+    onFileSelect(file);
 
     try {
       const formData = new FormData();
@@ -68,39 +69,65 @@ const handleFileUpload = async (
       });
       setUploadedFileName(file.name);
 
-      // const responseData = await response.json();
-
-      // const response2 = await fetch("/api/medicinereminders", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     user_id: user.uid,
-      //     name: responseData.file,
-      //   }),
-      // });
-
-      // if (!response2.ok) {
-      //   throw new Error(`HTTP error! status: ${response2.status}`);
-      // }
-      // const datatoupload = await response2.json();
-
-      // console.log(datatoupload);
-      // if (!datatoupload || !datatoupload.structuredData) {
-      //   throw new Error("No valid data received from server");
-      // }
-
-      
-
-      clearInterval(simulateProgress);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Upload failed: ${errorText}`);
+          const errorText = await response.text();
+          throw new Error(`Upload failed: ${errorText}`);
       }
 
-      setUploadProgress(100);
+      const responseData = await response.json();
 
+      const response2 = await fetch("/api/reportanalysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.uid,
+          name: responseData.file,
+        }),
+      });
+
+      if (!response2.ok) {
+        throw new Error(`HTTP error! status: ${response2.status}`);
+      }
+      const datatoupload = await response2.json();
+
+      console.log("uploadfile anaylsis", datatoupload);
+      if (!datatoupload || !datatoupload.structuredData) {
+        throw new Error("No valid data received from server");
+      }
+
+      // Extract insights
+      const insights = datatoupload.structuredData.insights.map(
+        (item: { insight: string }) => item.insight
+      );
+
+      // Store in Firebase Firestore
+      try {
+        const userPrescriptionsRef = doc(
+          db,
+          "users",
+          user.uid,
+          "reportinsights",
+          "insights"
+        );
+
+        await setDoc(
+          userPrescriptionsRef,
+          {
+            insights: arrayUnion(...insights), // Store only insights
+            uploadDate: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        console.log("Medications updated successfully");
+      } catch (error) {
+        console.error("Error storing prescription in Firebase:", error);
+        throw error;
+      }
+      clearInterval(simulateProgress);
+      setUploadProgress(100);
       alert("Successfully uploaded medication!");
+
     } catch (error: any) {
       console.error("Upload failed:", error);
       setUploadError(error.message || "Failed to upload file");
@@ -112,11 +139,6 @@ const handleFileUpload = async (
       }
     }
   };
-
-
-
-
-
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -147,20 +169,24 @@ const handleFileUpload = async (
   const removeFile = (id: string) => {
     setFiles(files.filter((f) => f.id !== id));
     if (files.length === 1) {
-      onFileSelect(null as any); // Clear extracted text if no files remain
+      onFileSelect(null); // Clear extracted text if no files remain
     }
   };
 
   return (
     <Card className="bg-indigo-50 shadow-md rounded-xl border border-gray-100">
       <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
-        <CardTitle className="text-lg font-semibold text-gray-800">Upload Files</CardTitle>
+        <CardTitle className="text-lg font-semibold text-gray-800">
+          Upload Files
+        </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:bg-gray-50"
+            isDragActive
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-300 hover:bg-gray-50"
           }`}
         >
           <input
@@ -174,17 +200,19 @@ const handleFileUpload = async (
           <h3 className="mt-2 text-lg font-medium text-gray-800">
             {isDragActive ? "Drop your file here" : "Drag and drop your files here"}
           </h3>
-          <p className="mt-1 text-sm text-gray-600">or click to browse (PDF, Image, or Text files)</p>
-          
+          <p className="mt-1 text-sm text-gray-600">
+            or click to browse (PDF, Image, or Text files)
+          </p>
+
           {/* ✅ Fix: Trigger file input on button click */}
-          <Button 
+          <Button
             className="mt-4 bg-blue-500 text-white hover:bg-blue-600"
             onClick={() => fileInputRef.current?.click()}
           >
             Select Files
           </Button>
         </div>
-  
+
         {files.length > 0 && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h3>
@@ -217,5 +245,4 @@ const handleFileUpload = async (
       </CardContent>
     </Card>
   );
-  
 }
