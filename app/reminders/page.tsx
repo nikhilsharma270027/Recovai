@@ -60,40 +60,10 @@ interface PrescriptionData {
 export default function MedicineReminders() {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null); // Store
-  console.log(uploadedFileName);
-  //   useEffect(() => {
-  //     const fetchData = async () => {
-  //       const response = await fetch("/api/medicinereminders", {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({
-  //           user_id: user?.uid,
-  //           name: uploadedFileName,
-  //         }),
-  //       });
-
-  //       if (!response.ok) {
-  //         console.error("Error fetching prescription data");
-  //         return;
-  //       }
-  // console.log(response)
-  //       const data: PrescriptionData = await response.json();
-  //       console.log(data)
-  //       const { medications, recommendations } = data.structuredData;
-
-  //       // Filter medicines based on time of day
-  //       setMorningMeds(medications.filter((med: any) => med.time_of_day === "Morning"));
-  //       setEveningMeds(medications.filter((med: any) => med.time_of_day === "Evening"));
-
-  //       setRecommendations(recommendations);
-  //     };
-
-  //     fetchData();
-  //   }, []);
-
-  /////////////
-  const { user, loading } = useAuth();
+  const [prescriptionData, setPrescriptionData] = useState<Medication[]>([]); // Changed type to Medication[]
   const [medications, setMedications] = useState<Medication[]>([]);
+
+  const { user, loading } = useAuth();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -105,6 +75,42 @@ export default function MedicineReminders() {
       medications.map((med) => (med.id === id ? { ...med, taken: true } : med))
     );
   };
+
+  useEffect(() => {
+    const fetchMedications = async () => {
+      if (!user) {
+        console.error("User not authenticated. Cannot fetch medications.");
+        return;
+      }
+
+      try {
+        const userPrescriptionsRef = doc(
+          db,
+          "users",
+          user.uid,
+          "medicinereminders",
+          "medications"
+        );
+        const docSnap = await getDoc(userPrescriptionsRef);
+
+        if (docSnap.exists()) {
+          // Correctly access the medications array from the document data
+          const data = docSnap.data();
+          if (data && data.medications && Array.isArray(data.medications)) {
+            setPrescriptionData(data.medications as Medication[]); // Cast to Medication[]
+          } else {
+            setPrescriptionData([]);
+          }
+        } else {
+          setPrescriptionData([]);
+        }
+      } catch (error) {
+        console.error("Error fetching medications from Firebase:", error);
+      }
+    };
+
+    fetchMedications();
+  }, [user]);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -144,7 +150,7 @@ export default function MedicineReminders() {
       });
       setUploadedFileName(file.name);
 
-      const responseData = await response.json(); // Store result in a variable
+      const responseData = await response.json();
 
       const response2 = await fetch("/api/medicinereminders", {
         method: "POST",
@@ -155,7 +161,40 @@ export default function MedicineReminders() {
         }),
       });
 
-      console.log(await response2.json()); // Log second response
+      if (!response2.ok) {
+        throw new Error(`HTTP error! status: ${response2.status}`);
+      }
+      const datatoupload = await response2.json();
+
+      console.log(datatoupload);
+      if (!datatoupload || !datatoupload.structuredData) {
+        throw new Error("No valid data received from server");
+      }
+
+      try {
+        const userPrescriptionsRef = doc(
+          db,
+          "users",
+          user.uid,
+          "medicinereminders",
+          "medications"
+        );
+        const newMedications = datatoupload.structuredData.medications;
+
+        await setDoc(
+          userPrescriptionsRef,
+          {
+            medications: arrayUnion(...newMedications),
+            uploadDate: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        console.log("Medications updated successfully");
+      } catch (error) {
+        console.error("Error storing prescription in Firebase:", error);
+        throw error;
+      }
 
       clearInterval(simulateProgress);
 
@@ -212,21 +251,20 @@ export default function MedicineReminders() {
           </div>
 
           <Tabs defaultValue="today" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8 bg-white rounded-xl p-0 shadow-sm border border-gray-200">
-            <TabsTrigger
-              value="today"
-              className="text-gray-700 py-2 data-[state=active]:scale-105 data-[state=active]:shadow-sm rounded-lg transition-all duration-200 hover:bg-gray-100"
-            >
-              Today's Schedule
-            </TabsTrigger>
-            <TabsTrigger
-              value="medications"
-              className="text-gray-700 py-2 data-[state=active]:scale-105 data-[state=active]:shadow-sm rounded-lg transition-all duration-200 hover:bg-gray-100"
-            >
-              My Medications
-            </TabsTrigger>
-          </TabsList>
-
+            <TabsList className="grid w-full grid-cols-2 mb-8 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
+              <TabsTrigger
+                value="today"
+                className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg"
+              >
+                Today's Schedule
+              </TabsTrigger>
+              <TabsTrigger
+                value="medications"
+                className="text-gray-700 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 rounded-lg"
+              >
+                My Medications
+              </TabsTrigger>
+            </TabsList>
             <TabsContent value="today" className="space-y-6">
               <Card className="bg-blue-50 shadow-md rounded-xl border border-gray-100">
                 <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
@@ -239,13 +277,6 @@ export default function MedicineReminders() {
                         Track your medication intake for today
                       </CardDescription>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-white text-gray-700 border-gray-300 hover:bg-gray-100">
-                      <Bell className="mr-2 h-4 w-4 text-blue-500" />
-                      Notification Settings
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
@@ -259,8 +290,9 @@ export default function MedicineReminders() {
                           .filter((med) => med.time_of_day === "Morning")
                           .map((med, index) => (
                             <div
-                              key={med.id}
-                              className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                              key={index}
+                              className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                            >
                               <div className="flex items-center space-x-4">
                                 <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
                                   <Pill className="h-6 w-6 text-blue-500" />
@@ -275,21 +307,12 @@ export default function MedicineReminders() {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
-                                <div className="text-sm text-gray-600">
-                                  8:00 AM
-                                </div>
-                                {med.taken ? (
-                                  <Badge className="bg-green-100 text-green-700 border-green-200">
-                                    Taken
-                                  </Badge>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    className="bg-blue-500 text-white hover:bg-blue-600"
-                                    onClick={() => markAsTaken(med.id)}>
-                                    Mark as Taken
-                                  </Button>
-                                )}
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-500 text-white hover:bg-blue-600"
+                                >
+                                  Mark as Taken
+                                </Button>
                               </div>
                             </div>
                           ))}
@@ -305,8 +328,9 @@ export default function MedicineReminders() {
                           .filter((med) => med.time_of_day === "Evening")
                           .map((med, index) => (
                             <div
-                              key={med.id}
-                              className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                              key={index}
+                              className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                            >
                               <div className="flex items-center space-x-4">
                                 <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
                                   <Pill className="h-6 w-6 text-purple-500" />
@@ -321,21 +345,12 @@ export default function MedicineReminders() {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
-                                <div className="text-sm text-gray-600">
-                                  8:00 PM
-                                </div>
-                                {med.taken ? (
-                                  <Badge className="bg-green-100 text-green-700 border-green-200">
-                                    Taken
-                                  </Badge>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    className="bg-blue-500 text-white hover:bg-blue-600"
-                                    onClick={() => markAsTaken(med.id)}>
-                                    Mark as Taken
-                                  </Button>
-                                )}
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-500 text-white hover:bg-blue-600"
+                                >
+                                  Mark as Taken
+                                </Button>
                               </div>
                             </div>
                           ))}
@@ -348,7 +363,7 @@ export default function MedicineReminders() {
 
             <TabsContent value="medications" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-5 bg-white shadow-md rounded-xl border border-gray-100">
+                <Card className="md:col-span-2 bg-purple-100 shadow-md rounded-xl border border-gray-100">
                   <CardHeader className="bg-gradient-to-r  rounded-t-xl">
                     <div className="flex justify-between items-center">
                       <div>
@@ -370,7 +385,8 @@ export default function MedicineReminders() {
                         <Button
                           className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"
                           onClick={triggerFileInput}
-                          disabled={uploading || !user}>
+                          disabled={uploading || !user}
+                        >
                           {uploading ? (
                             `Uploading... (${Math.round(uploadProgress)}%)`
                           ) : (
@@ -395,8 +411,9 @@ export default function MedicineReminders() {
                     <div className="space-y-4">
                       {prescriptionData.map((med) => (
                         <div
-                          key={med.id}
-                          className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                          key={med.name} // Use a unique identifier, assuming name is unique
+                          className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                        >
                           <div className="flex items-center space-x-4">
                             <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
                               {isImageContentType(med.name) ? ( //This part is incorrect.  med.name is not content type.  Content type is not available on this object.
@@ -429,7 +446,8 @@ export default function MedicineReminders() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-purple-600 hover:text-purple-700">
+                              className="text-purple-600 hover:text-purple-700"
+                            >
                               <ChevronRight className="h-4 w-4" />
                             </Button>
                           </div>
