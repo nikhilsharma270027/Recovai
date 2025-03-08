@@ -255,7 +255,7 @@ export default function ExerciseTracker() {
                   <label htmlFor="exercise-select" className="text-sm font-medium">
                     Select Exercise
                   </label>
-                  <Select disabled={isExercising} value={selectedExercise} onValueChange={setSelectedExercise}>
+                  {/* <Select disabled={isExercising} value={selectedExercise} onValueChange={setSelectedExercise}>
                     <SelectTrigger id="exercise-select">
                       <SelectValue placeholder="Select an exercise" />
                     </SelectTrigger>
@@ -266,7 +266,30 @@ export default function ExerciseTracker() {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                  </Select> */}
+                   <Select value={selectedExercise} onValueChange={setSelectedExercise}>
+      <SelectTrigger 
+        id="exercise-select" 
+        className="w-full border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+      >
+        <SelectValue placeholder="Select an exercise" />
+      </SelectTrigger>
+      <SelectContent className="bg-white border border-gray-200 rounded-lg shadow-lg mt-2">
+        {exercises.length > 0 ? (
+          exercises.map((exercise) => (
+            <SelectItem 
+              key={exercise.id} 
+              value={exercise.id} 
+              className="px-4 py-2 hover:bg-gray-100 transition-all cursor-pointer"
+            >
+              {exercise.name}
+            </SelectItem>
+          ))
+        ) : (
+          <div className="p-4 text-gray-500 text-center">No exercises available</div>
+        )}
+      </SelectContent>
+    </Select>
                 </div>
 
                 {currentExercise && (

@@ -319,8 +319,8 @@ export default function ReportAnalysis() {
             <TabsContent value="insights" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Insights Overview */}
-              <Card className="md:col-span-2 bg-white shadow-md rounded-xl border border-gray-100">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-xl">
+              <Card className="md:col-span-2 bg-purple-50 shadow-md rounded-xl border border-gray-100">
+                <CardHeader className="bg-gradient-to-r rounded-t-xl">
                 <CardTitle className="text-lg font-semibold text-gray-800">
                   Health Insights Overview
                 </CardTitle>
@@ -366,7 +366,7 @@ export default function ReportAnalysis() {
                       </div>
                       ))}
                     </div>
-                    <div className="mt-3 flex justify-end">
+                    {/* <div className="mt-3 flex justify-end">
                       <Button
                       variant="outline"
                       size="sm"
@@ -375,7 +375,7 @@ export default function ReportAnalysis() {
                       <Download className="mr-2 h-4 w-4" />
                       Download Report
                       </Button>
-                    </div>
+                    </div> */}
                     </div>
                   ))}
                 </div>
@@ -384,8 +384,8 @@ export default function ReportAnalysis() {
 
               {/* Additional Info (Health Categories & Actions) */}
               <div className="space-y-6">
-                <Card className="bg-white shadow-md rounded-xl border border-gray-100">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-teal-50 rounded-t-xl">
+                <Card className="bg-green-50 shadow-md rounded-xl border border-gray-100">
+                <CardHeader className="bg-gradient-to-r  rounded-t-xl">
                   <CardTitle className="text-lg font-semibold text-gray-800">
                   Health Categories
                   </CardTitle>
@@ -418,8 +418,8 @@ export default function ReportAnalysis() {
                 </Card>
 
                 {/* Recommended Actions */}
-                <Card className="bg-white shadow-md rounded-xl border border-gray-100">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+                <Card className="bg-indigo-50 shadow-md rounded-xl border border-gray-100">
+                <CardHeader className="bg-gradient-to-r rounded-t-xl">
                   <CardTitle className="text-lg font-semibold text-gray-800">
                   Recommended Actions
                   </CardTitle>
@@ -446,8 +446,8 @@ export default function ReportAnalysis() {
             </TabsContent>
 
             <TabsContent value="history" className="space-y-6">
-              <Card className="bg-white shadow-md rounded-xl border border-gray-100">
-                <CardHeader className="bg-gradient-to-r from-teal-50 to-green-50 rounded-t-xl">
+              <Card className="bg-teal-50 shadow-md rounded-xl border border-gray-100">
+                <CardHeader className="bg-gradient-to-r rounded-t-xl">
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-lg font-semibold text-gray-800">
