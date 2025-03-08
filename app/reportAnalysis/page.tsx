@@ -255,22 +255,6 @@ export default function ReportAnalysis() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   return (
     <div className="flex h-screen w-full">
       <Sidebar user={user} />

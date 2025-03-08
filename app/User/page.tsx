@@ -25,11 +25,10 @@ export default function UserProfile({ uploadedReports = 0 }: UserProfileProps) {
   const { user, loading, logout } = useAuth(); // Assuming useAuth provides user and logout
   const [reportCount, setReportCount] = useState(uploadedReports); // State for report count
 
-  // Simulate fetching report count (replace with actual API call if needed)
+
   useEffect(() => {
     if (!uploadedReports) {
-      // Example: Fetch report count from your backend or Firebase Firestore
-      // For now, we'll use the prop or a placeholder
+
       setReportCount(uploadedReports);
     }
   }, [uploadedReports]);
