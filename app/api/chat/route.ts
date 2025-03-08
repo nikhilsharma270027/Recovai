@@ -79,16 +79,15 @@ async function generateChatResponse(query: string, documents: Array<{ fileName: 
         ).join('\n\n');
 
         const prompt = `As a medical assistant, provide a helpful, accurate response to the user's health query. 
-Base your response ONLY on the information in the provided documents.
-If the information isn't in the documents, clearly state that you don't have that specific information.
-
-Relevant Medical Documents:
-${docContext}
-
-User Query: ${query}
-
-Respond in a conversational, empathetic tone. Prioritize accuracy and cite which document contains the information.
-DO NOT make up medical information not contained in the documents. you can give `;
+        Base your response on the information in the provided documents. If the information isn't in the documents, use your general medical knowledge to provide a helpful response.
+    
+        Relevant Medical Documents:
+        ${docContext}
+    
+        User Query: ${query}
+    
+        Respond in a conversational, empathetic tone. Prioritize accuracy and cite which document contains the information if applicable.
+        If the information isn't in the documents, provide a general response based on common medical knowledge.  only text form md format use the informat avaialbe and give user what he asks based on the user uploaded reports, dont specify anything else and dont give doctor consultation suggestions`;
 
         const result = await generateText({
             model: google('gemini-1.5-flash'),
@@ -101,7 +100,7 @@ DO NOT make up medical information not contained in the documents. you can give 
                     }],
                 },
             ],
-            temperature: 0.2, // Lower temperature for factual responses
+            temperature: 0.5, // Lower temperature for factual responses
             maxTokens: 800,
         });
 

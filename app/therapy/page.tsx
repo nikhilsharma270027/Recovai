@@ -431,7 +431,7 @@ export default function ExerciseTracker() {
                   </div>
                   <Progress
                     value={(repCount / currentExercise.targetReps) * 100}
-                    className="h-3 bg-indigo-100"
+                    className="h-3"
                   />
 
                   <div className="flex justify-between items-center mt-2">
@@ -440,7 +440,7 @@ export default function ExerciseTracker() {
                   </div>
                   <Progress 
                     value={holdProgress} 
-                    className="h-3 bg-indigo-100" 
+                    className="h-3 " 
                   />
 
                   {feedback && (
