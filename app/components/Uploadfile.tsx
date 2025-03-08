@@ -76,17 +76,35 @@ export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
 
       const responseData = await response.json();
 
-      const response2 = await fetch("/api/reportanalysis", {
+      let response2;
+      let attempts = 0;
+      const maxAttempts = 5;
+
+      while (attempts < maxAttempts) {
+        console.log(`Attempt ${attempts + 1} to fetch analysis data...`);
+        try {
+          response2 = await fetch("/api/reportanalysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: user.uid,
           name: responseData.file,
         }),
-      });
+          });
 
-      if (!response2.ok) {
+          if (response2.ok) {
+        break; // Exit loop if request is successful
+          } else {
         throw new Error(`HTTP error! status: ${response2.status}`);
+          }
+        } catch (error) {
+          attempts++;
+          if (attempts >= maxAttempts) {
+        throw new Error(`Failed after ${maxAttempts} attempts: ${error.message}`);
+          }
+          console.error(`Attempt ${attempts} failed: ${error.message}. Retrying in 2 seconds...`);
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2 seconds before retrying
+        }
       }
       const datatoupload = await response2.json();
 
