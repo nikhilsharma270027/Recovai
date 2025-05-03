@@ -145,10 +145,19 @@ export async function POST(req: NextRequest) {
             }, { status: 200 });
         }
 
-
+        ////////////
+        // Ensure content is always a string
+const formattedDocs = relevantDocs.map((doc) => ({
+    id: doc.id,
+    fileName: doc.fileName,
+    score: doc.score ?? 0, // If score is undefined, set it to 0
+    userId: doc.userId,
+    content: String(doc.content), // Ensure content is a string
+  }));
+        /////////
 
         // Generate chat response based on the query and documents
-        const chatResponse = await generateChatResponse(query, relevantDocs);
+        const chatResponse = await generateChatResponse(query, formattedDocs);
 
         return NextResponse.json({
             response: chatResponse.response,

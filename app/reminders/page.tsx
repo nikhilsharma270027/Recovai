@@ -169,7 +169,7 @@ export default function MedicineReminders() {
           }
 
           break; // Exit loop if request is successful
-        } catch (error) {
+        } catch (error:any) {
           attempts++;
           if (attempts >= maxAttempts) {
         throw new Error(`Failed after ${maxAttempts} attempts: ${error.message}`);
@@ -178,6 +178,11 @@ export default function MedicineReminders() {
           await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
+      if (!response2) {
+        console.error("response2 is undefined");
+        return;
+      }
+      
       const datatoupload = await response2.json();
 
       console.log(datatoupload);

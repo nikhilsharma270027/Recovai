@@ -9,11 +9,20 @@ import { useAuth } from 'context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Paperclip, Mic, Image, Smile, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tooltip } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+type Message = {
+  id: number;
+  text: string;
+  sender: string;
+  timestamp: Date;
+  documents?: string[]; // or whatever type `documents` is
+};
+
 
 const ChatPage = () => {
   const { user, loading, logout } = useAuth();
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     { 
       id: 1, 
       text: "👋 Hi there! I'm your medical AI assistant. I can help you understand your medical reports and answer health-related questions.", 
@@ -24,11 +33,11 @@ const ChatPage = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState('');
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;3
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       
     }
   }, [messages]);
@@ -87,7 +96,7 @@ const ChatPage = () => {
     }
   };
 
-  const formatTime = (date) => {
+  const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -116,9 +125,9 @@ const ChatPage = () => {
         </header>
 
         {/* Enhanced Chat Container */}
-        <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 to-blue-50 p-6">
+        <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 to-blue-50 p-6 overflow-scroll">
           <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -161,7 +170,8 @@ const ChatPage = () => {
                   {message.sender === 'user' && (
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-gradient-to-r from-gray-500 to-gray-600 text-white">
-                        {user?.username?.[0]?.toUpperCase() || 'U'}
+                      {(user as any)?.username?.[0]?.toUpperCase() || 'U'}
+
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -176,39 +186,53 @@ const ChatPage = () => {
           </ScrollArea>
 
           {/* Enhanced Input Area */}
-          <div className="bg-white p-4 rounded-lg shadow-lg mt-4 border">
-            <div className="flex items-center gap-2">
-              <Tooltip content="Attach file">
-                <Button variant="ghost" size="icon" className="text-gray-600 hover:text-blue-500">
-                  <Paperclip className="h-5 w-5" />
-                </Button>
-              </Tooltip>
-              <Tooltip content="Add image">
-                <Button variant="ghost" size="icon" className="text-gray-600 hover:text-blue-500">
-                  <Image className="h-5 w-5" />
-                </Button>
-              </Tooltip>
-              <Input
-                placeholder="Type your message..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                className="flex-1 border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 rounded-full px-6 py-4"
-              />
-              <Tooltip content="Add emoji">
-                <Button variant="ghost" size="icon" className="text-gray-600 hover:text-blue-500">
-                  <Smile className="h-5 w-5" />
-                </Button>
-              </Tooltip>
-              <Button
-                onClick={handleSend}
-                className="bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-              >
-                <Send className="h-5 w-5 mr-2" />
-                Send
-              </Button>
-            </div>
-          </div>
+<div className="bg-white p-4 rounded-lg shadow-lg mt-4 border ">
+  <div className="flex items-center gap-2">
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-gray-600 hover:text-blue-500">
+          <Paperclip className="h-5 w-5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Attach file</TooltipContent>
+    </Tooltip>
+
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-gray-600 hover:text-blue-500">
+          <Image className="h-5 w-5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Add image</TooltipContent>
+    </Tooltip>
+
+    <Input
+      placeholder="Type your message..."
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+      onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+      className="flex-1 border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 rounded-full px-6 py-4"
+    />
+
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-gray-600 hover:text-blue-500">
+          <Smile className="h-5 w-5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Add emoji</TooltipContent>
+    </Tooltip>
+
+    <Button
+      onClick={handleSend}
+      className="bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+    >
+      <Send className="h-5 w-5 mr-2" />
+      Send
+    </Button>
+  </div>
+</div>
+
         </div>
       </main>
     </div>

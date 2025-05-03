@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Ref, RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -260,7 +260,7 @@ export default function ExerciseTracker() {
 
   const { user, loading } = useAuth();
 
-  const { isReady, checkPose } = usePoseDetection(containerRef);
+  const { isReady, checkPose } = usePoseDetection(containerRef as RefObject<HTMLDivElement>);
 
   const exerciseLoop = useCallback(() => {
     if (!isExercising || !selectedExercise) return;

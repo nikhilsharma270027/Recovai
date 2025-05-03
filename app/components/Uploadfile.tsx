@@ -97,7 +97,7 @@ export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
           } else {
         throw new Error(`HTTP error! status: ${response2.status}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           attempts++;
           if (attempts >= maxAttempts) {
         throw new Error(`Failed after ${maxAttempts} attempts: ${error.message}`);
@@ -106,6 +106,11 @@ export default function UploadFiles({ onFileSelect }: UploadFilesProps) {
           await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2 seconds before retrying
         }
       }
+      if (!response2) {
+        console.error("response2 is undefined");
+        return;
+      }
+      
       const datatoupload = await response2.json();
 
       console.log("uploadfile anaylsis", datatoupload);

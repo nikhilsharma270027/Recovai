@@ -37,6 +37,12 @@ import UploadFiles from "@/components/Uploadfile";
 import { getDownloadURL, getMetadata, listAll, ref } from "firebase/storage";
 import { db, storage } from "@/lib/firebaseConfig";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
+type Insight = {
+  id: string;
+  title: string;
+  description: string;
+  // add any other fields you need
+};
 
 type UploadedFile = {
   id: string;
@@ -314,7 +320,7 @@ export default function ReportAnalysis() {
                 </CardHeader>
                 <CardContent className="pt-6">
                 <div className="space-y-6">
-                  {insights.map((insight) => (
+                  {insights.map((insight: any) => (
                     <div
                     key={insight.id}
                     className="border-b border-gray-200 pb-4 last:border-0"
@@ -331,7 +337,7 @@ export default function ReportAnalysis() {
                       </Badge>
                     </div>
                     <div className="mt-3 space-y-3">
-                      {insight.insights.map((item, index) => (
+                      {insight.insights.map((item: any, index: any) => (
                       <div
                         key={index}
                         className="bg-gradient-to-r from-gray-50 to-blue-50 p-3 rounded-md shadow-sm"
@@ -468,7 +474,7 @@ export default function ReportAnalysis() {
                       <div>Status</div>
                     </div>
                     <div className="divide-y divide-gray-200">
-                      {files.map((file) => (
+                      {files.map((file: any) => (
                         <div
                           key={file.fullPath}
                           className="grid grid-cols-5 p-4 items-center hover:bg-gray-50">

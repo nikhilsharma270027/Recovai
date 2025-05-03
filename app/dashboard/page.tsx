@@ -5,8 +5,10 @@ import  { Sidebar } from "@/components/SideBar"; // Ensure correct import path
 import { useAuth } from "context/AuthContext";
 import { useRouter } from "next/navigation";
 import { ReactNode } from "react";
-
-export default function Layout({ children }: { children: ReactNode }) {
+interface LayoutProps {
+  children: React.ReactNode; // This must be required
+}
+export default function Layout() {
   const { user, loading } = useAuth();
   const router = useRouter();
 

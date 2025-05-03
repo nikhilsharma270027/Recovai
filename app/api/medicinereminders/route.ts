@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from 'firebase-admin/storage';
 import { customInitApp } from '@/lib/firebase-admin-config';
 import * as pdfParse from 'pdf-parse/lib/pdf-parse.js';
+// import * as pdfParse from 'pdf-parse';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 

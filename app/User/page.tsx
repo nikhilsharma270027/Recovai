@@ -21,7 +21,8 @@ interface UserProfileProps {
   uploadedReports?: number; // Optional prop for report count; fetch from backend if needed
 }
 
-export default function UserProfile({ uploadedReports = 0 }: UserProfileProps) {
+export default function UserProfile() {
+  const [uploadedReports, setUploadedReports] = useState<number>(0);
   const { user, loading, logout } = useAuth(); // Assuming useAuth provides user and logout
   const [reportCount, setReportCount] = useState(uploadedReports); // State for report count
 
