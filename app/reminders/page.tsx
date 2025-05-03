@@ -38,6 +38,7 @@ import {
   getDoc,
   serverTimestamp,
   setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
 
@@ -48,6 +49,7 @@ interface Medication {
   instructions: string;
   name: string;
   time_of_day: string; // Corrected typo here
+  taken?: boolean;
 }
 
 interface PrescriptionData {
@@ -253,6 +255,27 @@ export default function MedicineReminders() {
     );
   }
 
+  const markAsTaken = async (medicationName: string) => {
+    if (!user) return;
+
+    try {
+      const userPrescriptionsRef = doc(db, "users", user.uid, "medicinereminders", "medications");
+      const docSnap = await getDoc(userPrescriptionsRef);
+
+      if (docSnap.exists()) {
+        let medications = docSnap.data().medications;
+        medications = medications.map((med: Medication) =>
+          med.name === medicationName ? { ...med, taken: true } : med
+        );
+
+        await updateDoc(userPrescriptionsRef, { medications });
+        setPrescriptionData(medications);
+      }
+    } catch (error) {
+      console.error("Error updating medication status:", error);
+    }
+  };
+
   return (
     <div className="flex h-screen w-full">
       <Sidebar user={user} />
@@ -326,12 +349,14 @@ export default function MedicineReminders() {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
-                                <Button
-                                  size="sm"
-                                  className="bg-blue-500 text-white hover:bg-blue-600"
-                                >
-                                  Mark as Taken
-                                </Button>
+                              <Button
+                        size="sm"
+                        className={med.taken ? "bg-gray-400 text-white" : "bg-blue-500 text-white hover:bg-blue-600"}
+                        onClick={() => markAsTaken(med.name)}
+                        disabled={med.taken}
+                      >
+                        {med.taken ? "Taken" : "Mark as Taken"}
+                      </Button>
                               </div>
                             </div>
                           ))}
@@ -364,12 +389,14 @@ export default function MedicineReminders() {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
-                                <Button
-                                  size="sm"
-                                  className="bg-blue-500 text-white hover:bg-blue-600"
-                                >
-                                  Mark as Taken
-                                </Button>
+                              <Button
+                        size="sm"
+                        className={med.taken ? "bg-gray-400 text-white" : "bg-blue-500 text-white hover:bg-blue-600"}
+                        onClick={() => markAsTaken(med.name)}
+                        disabled={med.taken}
+                      >
+                        {med.taken ? "Taken" : "Mark as Taken"}
+                      </Button>
                               </div>
                             </div>
                           ))}
