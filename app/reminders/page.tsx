@@ -212,6 +212,22 @@ export default function MedicineReminders() {
         );
 
         console.log("Medications updated successfully");
+
+        // Log medication upload activity
+        try {
+          await fetch('/api/user-activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: user.uid,
+              activity_type: 'medication',
+              activity_title: 'Prescription Uploaded',
+              activity_data: { medicationsCount: newMedications.length }
+            })
+          });
+        } catch (activityError) {
+          console.error('Failed to log medication activity:', activityError);
+        }
       } catch (error) {
         console.error("Error storing prescription in Firebase:", error);
         throw error;
@@ -298,7 +314,7 @@ export default function MedicineReminders() {
                 value="today"
                 className="text-gray-700 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 rounded-lg p-1.5"
               >
-                Today's Schedule
+                                        Today&apos;s Schedule
               </TabsTrigger>
               <TabsTrigger
                 value="medications"
@@ -313,7 +329,7 @@ export default function MedicineReminders() {
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-lg font-semibold text-gray-800">
-                        Today's Medication Schedule
+                        Today&apos;s Medication Schedule
                       </CardTitle>
                       <CardDescription className="text-gray-600">
                         Track your medication intake for today
@@ -462,17 +478,7 @@ export default function MedicineReminders() {
                         >
                           <div className="flex items-center space-x-4">
                             <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                              {isImageContentType(med.name) ? ( //This part is incorrect.  med.name is not content type.  Content type is not available on this object.
-                                <Image
-                                  src={"/placeholder.svg"} // No image URL available. Using default placeholder
-                                  alt={med.name}
-                                  width={40}
-                                  height={40}
-                                  className="rounded-full"
-                                />
-                              ) : (
-                                <Pill className="h-6 w-6 text-purple-500" />
-                              )}
+                              <Pill className="h-6 w-6 text-purple-500" />
                             </div>
                             <div>
                               <h4 className="font-semibold text-gray-800">
@@ -487,7 +493,7 @@ export default function MedicineReminders() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                              {/* Refill: {med.refillDate} Refill date not available.*/}
+                              Duration: {med.duration || 'Ongoing'}
                             </Badge>
                             <Button
                               variant="ghost"

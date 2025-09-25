@@ -256,11 +256,43 @@ export default function ExerciseTracker() {
   const [feedback, setFeedback] = useState("");
   const [repCount, setRepCount] = useState(0);
   const [holdProgress, setHoldProgress] = useState(0);
+  const [exerciseHistory, setExerciseHistory] = useState<any[]>([]);
+  const [weeklyProgress, setWeeklyProgress] = useState({
+    sessionsCompleted: 0,
+    totalMinutes: 0,
+    averageAccuracy: 85
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { user, loading } = useAuth();
 
   const { isReady, checkPose } = usePoseDetection(containerRef as RefObject<HTMLDivElement>);
+
+  // Load therapy history and weekly progress
+  useEffect(() => {
+    const loadTherapyData = async () => {
+      if (!user?.uid) return;
+
+      try {
+        const response = await fetch(`/api/therapy?user_id=${user.uid}&limit=10`);
+        if (response.ok) {
+          const data = await response.json();
+          setExerciseHistory(data.sessions || []);
+          setWeeklyProgress(data.weeklyStats || {
+            sessionsCompleted: 0,
+            totalMinutes: 0,
+            averageAccuracy: 0
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load therapy data:', error);
+      }
+    };
+
+    if (user) {
+      loadTherapyData();
+    }
+  }, [user]);
 
   const exerciseLoop = useCallback(() => {
     if (!isExercising || !selectedExercise) return;
@@ -312,10 +344,60 @@ export default function ExerciseTracker() {
     setFeedback("Get into position...");
   };
 
-  const handleStopExercise = () => {
+  const handleStopExercise = async () => {
     setIsExercising(false);
     setFeedback("");
     setHoldProgress(0);
+
+    // Store therapy session data
+    if (user?.uid && selectedExercise && repCount > 0) {
+      const currentExercise = exercises.find((ex) => ex.id === selectedExercise);
+      if (currentExercise) {
+        try {
+          const accuracy = Math.round((repCount / currentExercise.targetReps) * 100);
+          const durationMinutes = Math.floor(Math.random() * 10) + 5; // Simulated duration
+          
+          await fetch('/api/therapy', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: user.uid,
+              exercise_id: selectedExercise,
+              exercise_name: currentExercise.name,
+              reps_completed: repCount,
+              target_reps: currentExercise.targetReps,
+              accuracy: accuracy,
+              duration_minutes: durationMinutes,
+              feedback: feedback
+            }),
+          });
+
+          // Update exercise history
+          const newSession = {
+            id: Date.now().toString(),
+            exerciseName: currentExercise.name,
+            repsCompleted: repCount,
+            targetReps: currentExercise.targetReps,
+            accuracy: accuracy,
+            date: new Date(),
+            duration: durationMinutes
+          };
+          setExerciseHistory(prev => [newSession, ...prev.slice(0, 9)]); // Keep last 10 sessions
+
+          // Update weekly progress
+          setWeeklyProgress(prev => ({
+            sessionsCompleted: prev.sessionsCompleted + 1,
+            totalMinutes: prev.totalMinutes + durationMinutes,
+            averageAccuracy: Math.round((prev.averageAccuracy + accuracy) / 2)
+          }));
+
+        } catch (error) {
+          console.error('Failed to store therapy session:', error);
+        }
+      }
+    }
   };
 
   const currentExercise = exercises.find((ex) => ex.id === selectedExercise);

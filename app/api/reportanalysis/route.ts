@@ -31,10 +31,11 @@ async function generateEmbeddings(text: string): Promise<number[]> {
         },
         body: JSON.stringify({
             input: [text],
-            model: "nvidia/embed-qa-4",
+            model: "nvidia/llama-3.2-nv-embedqa-1b-v2",
             input_type: "query",
             encoding_format: "float",
             truncate: "NONE",
+            dimensions: 1024,
         }),
     });
 
@@ -204,6 +205,23 @@ export async function POST(req: NextRequest) {
                         error: 'Failed to parse LLM response'
                       }, { status: 500 });
                     }
+                    
+                    // Log report analysis activity
+                    try {
+                        const activityResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/user-activity`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: user_id,
+                                activity_type: 'report',
+                                activity_title: 'Medical Report Analyzed',
+                                activity_data: { fileName: name }
+                            })
+                        });
+                    } catch (activityError) {
+                        console.error('Failed to log report activity:', activityError);
+                    }
+
                     return NextResponse.json({ message: 'PDF processed and saved to Pinecone', structuredData }, { status: 200 });
                 } catch (geminiError) {
                     console.error('Gemini Error:', geminiError);

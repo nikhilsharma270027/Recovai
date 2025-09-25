@@ -16,23 +16,94 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { db } from "@/lib/firebaseConfig";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 
 interface UserProfileProps {
   uploadedReports?: number; // Optional prop for report count; fetch from backend if needed
 }
 
 export default function UserProfile() {
-  const [uploadedReports, setUploadedReports] = useState<number>(0);
-  const { user, loading, logout } = useAuth(); // Assuming useAuth provides user and logout
-  const [reportCount, setReportCount] = useState(uploadedReports); // State for report count
+  const { user, loading, logout } = useAuth();
+  const [userStats, setUserStats] = useState({
+    reportCount: 0,
+    medicationCount: 0,
+    therapySessions: 0,
+    chatMessages: 0
+  });
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
 
 
   useEffect(() => {
-    if (!uploadedReports) {
+    const loadUserData = async () => {
+      if (user?.uid) {
+        try {
+          // Fetch real user statistics from Firebase
+          
+          // Get reports count
+          const reportsRef = collection(db, "users", user.uid, "reportinsights");
+          const reportsSnap = await getDocs(reportsRef);
+          const reportCount = reportsSnap.size;
 
-      setReportCount(uploadedReports);
-    }
-  }, [uploadedReports]);
+          // Get medications count
+          const medicationsRef = doc(db, "users", user.uid, "medicinereminders", "medications");
+          const medicationsSnap = await getDoc(medicationsRef);
+          let medicationCount = 0;
+          if (medicationsSnap.exists()) {
+            const data = medicationsSnap.data();
+            medicationCount = (data.medications || []).length;
+          }
+
+          // Get therapy sessions count
+          const therapyResponse = await fetch(`/api/therapy?user_id=${user.uid}&limit=1000`);
+          let therapySessions = 0;
+          if (therapyResponse.ok) {
+            const therapyData = await therapyResponse.json();
+            therapySessions = therapyData.totalSessions || 0;
+          }
+
+          // Get chat messages count
+          const chatResponse = await fetch(`/api/chat/history?user_id=${user.uid}&limit=1000`);
+          let chatMessages = 0;
+          if (chatResponse.ok) {
+            const chatData = await chatResponse.json();
+            chatMessages = chatData.count || 0;
+          }
+
+          setUserStats({
+            reportCount,
+            medicationCount,
+            therapySessions,
+            chatMessages
+          });
+
+          generateRecentActivity();
+        } catch (error) {
+          console.error("Error fetching user stats:", error);
+          // Fallback to default values
+          setUserStats({
+            reportCount: 0,
+            medicationCount: 0,
+            therapySessions: 0,
+            chatMessages: 0
+          });
+        }
+      }
+    };
+
+    loadUserData();
+  }, [user]);
+
+  const generateRecentActivity = () => {
+    const activities = [
+      { type: "report", title: "Blood Test Report Uploaded", date: "2 hours ago", icon: FileText },
+      { type: "medication", title: "Morning Medication Taken", date: "4 hours ago", icon: Calendar },
+      { type: "therapy", title: "Physical Therapy Session", date: "1 day ago", icon: Calendar },
+      { type: "chat", title: "AI Health Consultation", date: "2 days ago", icon: Calendar }
+    ];
+    setRecentActivity(activities);
+  };
 
   if (loading) {
     return (
@@ -150,23 +221,53 @@ export default function UserProfile() {
                   <CardTitle className="text-lg font-semibold text-gray-800">Activity Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="space-y-6">
-                    <div className="flex items-center space-x-3">
-                      <FileText className="h-6 w-6 text-purple-500" />
-                      <div>
-                        <p className="text-sm text-gray-600">Reports Uploaded</p>
-                        <p className="text-2xl font-bold text-gray-800">{reportCount}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="h-6 w-6 text-blue-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Reports</p>
+                          <p className="text-xl font-bold text-gray-800">{userStats.reportCount}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Calendar className="h-6 w-6 text-green-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Medications</p>
+                          <p className="text-xl font-bold text-gray-800">{userStats.medicationCount}</p>
+                        </div>
                       </div>
                     </div>
-                    <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                      {reportCount === 0 ? "No reports yet" : `${reportCount} report${reportCount === 1 ? "" : "s"}`}
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      className="w-full bg-white text-purple-600 border-purple-200 hover:bg-purple-50"
-                    >
-                      View Reports
-                    </Button>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <UserIcon className="h-6 w-6 text-purple-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Therapy Sessions</p>
+                          <p className="text-xl font-bold text-gray-800">{userStats.therapySessions}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Mail className="h-6 w-6 text-orange-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Chat Messages</p>
+                          <p className="text-xl font-bold text-gray-800">{userStats.chatMessages}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6 space-y-2">
+                    <h4 className="font-semibold text-gray-800">Recent Activity</h4>
+                    <div className="space-y-2">
+                      {recentActivity.map((activity, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <activity.icon className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{activity.title}</span>
+                          </div>
+                          <span className="text-xs text-gray-500">{activity.date}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

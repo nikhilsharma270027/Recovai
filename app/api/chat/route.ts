@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { GoogleGenAI } from '@google/genai';
+import { db } from '@/lib/firebaseConfig';
+import { collection, addDoc, doc, updateDoc, getDoc, serverTimestamp, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 
 // Initialize Pinecone
 const pinecone = new Pinecone({
@@ -24,10 +25,11 @@ async function generateEmbeddings(text: string): Promise<number[]> {
         },
         body: JSON.stringify({
             input: [text],
-            model: "nvidia/embed-qa-4",
+            model: "nvidia/llama-3.2-nv-embedqa-1b-v2",
             input_type: "query",
             encoding_format: "float",
             truncate: "NONE",
+            dimensions: 1024,
         }),
     });
 
@@ -89,23 +91,32 @@ async function generateChatResponse(query: string, documents: Array<{ fileName: 
         Respond in a conversational, empathetic tone. Prioritize accuracy and cite which document contains the information if applicable.
         If the information isn't in the documents, provide a general response based on common medical knowledge.  only text form md format use the informat avaialbe and give user what he asks based on the user uploaded reports, dont specify anything else and dont give doctor consultation suggestions`;
 
-        const result = await generateText({
-            model: google('gemini-1.5-flash'),
-            messages: [
-                {
-                    role: 'user',
-                    content: [{
-                        type: 'text',
-                        text: prompt
-                    }],
-                },
-            ],
-            temperature: 0.5, // Lower temperature for factual responses
-            maxTokens: 800,
+        const ai = new GoogleGenAI({
+            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
         });
 
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        {
+                            text: prompt,
+                        },
+                    ],
+                },
+            ],
+            config: {
+                temperature: 0.5,
+                maxOutputTokens: 800,
+            },
+        });
+
+        const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';
+
         return {
-            response: result.text,
+            response: responseText,
             sourceDocs: documents.map(doc => doc.fileName)
         };
     } catch (error) {
@@ -138,9 +149,37 @@ export async function POST(req: NextRequest) {
         const relevantDocs = await retrieveRelevantDocuments(user_id, queryEmbedding);
 
         if (relevantDocs.length === 0) {
+            // Generate a general response even without documents
+            const ai = new GoogleGenAI({
+                apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
+            });
+
+            const generalResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            {
+                                text: `As a medical assistant, provide a helpful general response to this health query: "${query}". 
+                                Since no specific medical reports are available, provide general medical information and advice. 
+                                Keep the response conversational and helpful. Always recommend consulting with healthcare professionals for specific medical advice.`,
+                            },
+                        ],
+                    },
+                ],
+                config: {
+                    temperature: 0.7,
+                    maxOutputTokens: 500,
+                },
+            });
+
+            const responseText = generalResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';
+
             return NextResponse.json({
-                message: 'No relevant documents found for your query. Please upload your medical reports first or try a different question.',
-                documents: []
+                response: responseText,
+                documents: [],
+                message: 'Response based on general medical knowledge. For personalized advice, please upload your medical reports.'
             }, { status: 200 });
         }
 
@@ -157,6 +196,25 @@ const formattedDocs = relevantDocs.map((doc) => ({
 
         // Generate chat response based on the query and documents
         const chatResponse = await generateChatResponse(query, formattedDocs);
+
+        // Store chat conversation in Firebase
+        try {
+            const chatRef = collection(db, 'users', user_id, 'conversations');
+            await addDoc(chatRef, {
+                userMessage: query,
+                aiResponse: chatResponse.response,
+                documents: chatResponse.sourceDocs,
+                relevanceScores: relevantDocs.map(doc => ({
+                    document: doc.fileName,
+                    score: doc.score
+                })),
+                timestamp: serverTimestamp(),
+                createdAt: new Date().toISOString()
+            });
+        } catch (firebaseError) {
+            console.error('Failed to store conversation in Firebase:', firebaseError);
+            // Continue even if storage fails
+        }
 
         return NextResponse.json({
             response: chatResponse.response,

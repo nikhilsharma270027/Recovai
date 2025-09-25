@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sidebar } from '@/components/SideBar';
 import { useAuth } from 'context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, Mic, Image, Smile, MoreVertical } from 'lucide-react';
+import { Send, Paperclip, Mic, Image, Smile, MoreVertical, Copy, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -22,18 +22,75 @@ type Message = {
 
 const ChatPage = () => {
   const { user, loading, logout } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([
-    { 
-      id: 1, 
-      text: "👋 Hi there! I'm your medical AI assistant. I can help you understand your medical reports and answer health-related questions.", 
-      sender: 'bot', 
-      timestamp: new Date() 
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history from Firebase
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      if (!user?.uid) return;
+
+      try {
+        setIsLoadingHistory(true);
+        const response = await fetch(`/api/chat/history?user_id=${user.uid}&limit=100`);
+        const data = await response.json();
+
+        if (response.ok && data.conversations) {
+          const formattedMessages = data.conversations.flatMap((conv: any, index: number) => [
+            {
+              id: `user-${index}`,
+              text: conv.userMessage,
+              sender: 'user',
+              timestamp: new Date(conv.timestamp),
+            },
+            {
+              id: `bot-${index}`,
+              text: conv.aiResponse,
+              sender: 'bot',
+              timestamp: new Date(conv.timestamp),
+              documents: conv.documents
+            }
+          ]);
+
+          if (formattedMessages.length === 0) {
+            // Add welcome message only if no history exists
+            setMessages([
+              { 
+                id: Date.now(), 
+                text: "👋 Hi there! I'm your medical AI assistant. I can help you understand your medical reports and answer health-related questions.", 
+                sender: 'bot', 
+                timestamp: new Date() 
+              },
+            ]);
+          } else {
+            setMessages(formattedMessages);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+        // Add welcome message on error
+        setMessages([
+          { 
+            id: Date.now(), 
+            text: "👋 Hi there! I'm your medical AI assistant. I can help you understand your medical reports and answer health-related questions.", 
+            sender: 'bot', 
+            timestamp: new Date() 
+          },
+        ]);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    if (user) {
+      loadChatHistory();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -97,7 +154,86 @@ const ChatPage = () => {
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Use a consistent format to avoid hydration mismatch
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 || 12;
+    const formattedMinutes = minutes.toString().padStart(2, '0');
+    return `${formattedHours}:${formattedMinutes} ${ampm}`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const handleVoiceInput = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    }
+  };
+
+  const regenerateResponse = async (messageIndex: number) => {
+    const userMessage = messages[messageIndex - 1];
+    if (!userMessage) return;
+
+    setIsTyping(true);
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: userMessage.text,
+          user_id: user?.uid,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get response');
+      }
+
+      const updatedMessages = [...messages];
+      updatedMessages[messageIndex] = {
+        ...updatedMessages[messageIndex],
+        text: data.response,
+        documents: data.documents,
+        timestamp: new Date()
+      };
+      setMessages(updatedMessages);
+    } catch (error) {
+      console.error('Regenerate error:', error);
+      setError('Failed to regenerate response. Please try again.');
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -149,7 +285,39 @@ const ChatPage = () => {
                         : 'bg-white text-gray-800 border border-gray-100'
                     )}
                   >
-                    <p className="text-sm leading-relaxed">{message.text}</p>
+                    <div className="space-y-2">
+                      <p className="text-sm leading-relaxed">{message.text}</p>
+                      {message.sender === 'bot' && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(message.text)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copy
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateResponse(messages.indexOf(message))}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Regenerate
+                          </Button>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              <ThumbsUp className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              <ThumbsDown className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     {message.documents && (
                       <div className="mt-2 text-xs text-gray-400">
                         <p>Sources:</p>
@@ -199,11 +367,16 @@ const ChatPage = () => {
 
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-gray-600 hover:text-blue-500">
-          <Image className="h-5 w-5" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={`text-gray-600 hover:text-blue-500 ${isListening ? 'text-red-500 animate-pulse' : ''}`}
+          onClick={handleVoiceInput}
+        >
+          <Mic className="h-5 w-5" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Add image</TooltipContent>
+      <TooltipContent>{isListening ? 'Listening...' : 'Voice input'}</TooltipContent>
     </Tooltip>
 
     <Input

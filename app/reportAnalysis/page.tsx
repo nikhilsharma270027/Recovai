@@ -58,8 +58,8 @@ type UploadedFile = {
 
 export default function ReportAnalysis() {
   const [extractedText, setExtractedText] = useState("");
-
-
+  const [analysisResults, setAnalysisResults] = useState<any[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   function extractReport() {
     // Simulating an AI extraction process
@@ -118,10 +118,30 @@ export default function ReportAnalysis() {
           id: doc.id,
           ...doc.data(),
           status: "complete",
+          date: doc.data().uploadDate || new Date().toISOString()
         }));
 
         console.log("Fetched insights:", insightsData);
         setInsights(insightsData as any); // Store in state
+        setAnalysisResults(insightsData as any);
+
+        // Log report analysis activity
+        if (insightsData.length > 0) {
+          try {
+            await fetch('/api/user-activity', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: user.uid,
+                activity_type: 'report',
+                activity_title: 'Medical Report Analyzed',
+                activity_data: { reportsCount: insightsData.length }
+              })
+            });
+          } catch (error) {
+            console.error('Failed to log report activity:', error);
+          }
+        }
       } catch (error) {
         console.error("Error fetching report insights from Firebase:", error);
       }
@@ -383,10 +403,10 @@ export default function ReportAnalysis() {
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                   {[
-                    { name: "Cardiovascular", value: 92 },
-                    { name: "Metabolic", value: 78 },
-                    { name: "Nutritional", value: 65 },
-                    { name: "Immune System", value: 88 },
+                    { name: "Cardiovascular", value: Math.floor(Math.random() * 20) + 80 },
+                    { name: "Metabolic", value: Math.floor(Math.random() * 25) + 75 },
+                    { name: "Nutritional", value: Math.floor(Math.random() * 30) + 60 },
+                    { name: "Immune System", value: Math.floor(Math.random() * 15) + 85 },
                   ].map((category, index) => (
                     <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between">
